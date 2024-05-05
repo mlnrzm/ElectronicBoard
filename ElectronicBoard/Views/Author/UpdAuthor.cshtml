@@ -1,0 +1,65 @@
+﻿@model Author
+<div id="main">
+	<div class="inner">
+		<section>
+			<!-- Form -->
+			<header class="major">
+				<h2>Редактирование автора</h2>
+			</header>
+			<form method="post">
+				<div class="row gtr-uniform">
+
+					<div class="col-12">
+						<input type="hidden" name="id" id="articleId" value=@Model.Id placeholder="id" />
+					</div>
+					<div class="col-12">
+						<input type="hidden" name="articleId" id="articleId" value=@ViewData["articleId"] placeholder="articleId" />
+					</div>
+					<div class="col-12">
+						<input type="hidden" name="blockId" id="blockId" value=@ViewData["blockId"] placeholder="blockId" />
+					</div>
+
+					<div class="col-12">
+						<input type="text" name="name" id="demo-name" value="@Model.AuthorFIO" placeholder="Название" />
+					</div>
+					<div class="col-12">
+						<input type="email" name="email" id="demo-text" value="@Model.AuthorEmail" placeholder="Email" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="organization" id="demo-name" value="@Model.AuthorOrganization" placeholder="Организация" />
+					</div>
+
+					<!-- Выбрать участника -->
+					<div class="col-12">
+						<select name="partId" id="demo-category">
+							<option value="" disabled selected>- Участник -</option>
+							
+
+							@if (ViewBag.ActiveParticipant != null)
+							{
+								<option value="0">Не выбран</option>
+								<option value="@ViewBag.ActiveParticipant.Id" selected>@ViewBag.ActiveParticipant.ParticipantFIO</option>
+							}
+							else
+							{
+								<option value="0" selected>Не выбран</option>
+							}
+							@foreach (Participant part in ViewBag.Participants)
+							{
+								<option value="@part.Id">@part.ParticipantFIO</option>
+							}
+						</select>
+					</div>
+
+					<div class="col-12">
+						<ul class="actions">
+							<li><input type="submit" value="Сохранить" class="primary" /></li>
+							<li><a href="javascript: history.go(-1)" class="button">Отмена</a></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+		</section>
+	</div>
+</div>
+

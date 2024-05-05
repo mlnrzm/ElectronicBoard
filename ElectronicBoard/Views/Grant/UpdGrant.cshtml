@@ -1,0 +1,65 @@
+﻿@model Grant
+<div id="main">
+	<div class="inner">
+		<section>
+			<!-- Form -->
+			<header class="major">
+				<h2>Редактирование гранта</h2>
+			</header>
+			<form method="post" enctype="multipart/form-data">
+				<div class="row gtr-uniform">
+
+					<div class="col-12">
+						<input type="hidden" name="id" id="id" value=@Model.Id placeholder="id" />
+					</div>
+
+					<div class="col-12">
+						<input type="hidden" name="blockId" id="blockId" value=@Model.BlockId placeholder="blockId" />
+					</div>
+
+					<div class="col-12">
+						<input type="text" name="name" id="demo-name" value="@Model.GrantName" placeholder="Название" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="desc" id="demo-text" value="@Model.GrantDescription" placeholder="Описание" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="source" id="demo-text" value="@Model.GrantSource" placeholder="Источник" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="status" id="demo-text" value="@Model.GrantStatus" placeholder="Статус" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="text" id="demo-text" value="@Model.GrantText" placeholder="Текст" />
+					</div>
+					<!-- Изображение -->
+					<div class="col-12">
+						<label for="pict">Загрузить новое изображение:</label>
+						<input id="pict" name="pict" type="file" class="form-control" value=@ViewBag.Picture />
+						<input type="checkbox" id="del-pic" name="delpic">
+						<label for="del-pic">Удалить текущее изображение</label>
+					</div>
+					<div class="col-12">
+						<label for="start">Срок подачи заявки: </label>
+						<input type="date" id="start" name="datesr" value="@Model.GrantDeadline.ToString("yyyy-MM-dd")" min="2024-01-01" />
+					</div>
+					<div class="col-12">
+						<label for="start">Срок начала выполнения: </label>
+						<input type="date" id="start" name="datestart" value="@Model.GrantDeadlineStart.ToString("yyyy-MM-dd")" min="2024-01-01" />
+					</div>
+					<div class="col-12">
+						<label for="start">Срок завершения выполнения: </label>
+						<input type="date" id="start" name="datefinish" value="@Model.GrantDeadlineFinish.ToString("yyyy-MM-dd")" min="2024-01-01" />
+					</div>
+					<div class="col-12">
+						<ul class="actions">
+							<li><input type="submit" value="Сохранить" class="primary" /></li>
+							<li><a href="javascript: history.go(-1)" class="button">Отмена</a></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+		</section>
+	</div>
+</div>
+

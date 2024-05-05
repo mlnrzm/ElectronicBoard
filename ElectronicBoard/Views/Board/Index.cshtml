@@ -1,0 +1,104 @@
+﻿@model Board
+@{
+	ViewData["Title"] = "Home Page";
+	Participant part = Program.Participant;
+}
+
+<!-- Main -->
+<div id="main">
+	<div class="inner">
+
+		<!-- Content -->
+		<section>
+			<header class="main">
+				<h1>@Model.BoardName</h1>
+			</header>
+
+			<!-- Content -->
+			<p>@Model.BoardThematics</p>
+		</section>
+
+		<!-- Section -->
+		<section>
+			<header class="major">
+				<h2>Блоки</h2>
+			</header>
+			<div class="features">
+				@foreach (var block in Model.Blocks)
+				{
+					if (block.VisibilityOpening)
+					{
+						<article>
+							<div class="content">
+								<h3>
+									<a href="/block/index?id=@Html.DisplayFor(modelItem => block.Id)">@Html.DisplayFor(modelItem => block.BlockName)</a>
+								</h3>
+							</div>
+						</article>
+					}
+				}
+			</div>
+			<ul class="actions">
+				<li><a href="/block/addblock?boardId=@Model.Id.ToString()" class="button">Добавить блок</a></li>
+			</ul>
+		</section>
+		<ul class="actions">
+			<li><a href="/board/exitboard?boardId=@Model.Id&partId=@part.Id">Покинуть доску</a></li>
+		</ul>
+	</div>
+</div>
+
+<!-- Sidebar -->
+<div id="sidebar">
+	<div class="inner">
+
+		<!-- Menu -->
+		<nav id="menu">
+			<header class="major">
+				<h2>Меню</h2>
+			</header>
+			<ul>
+				<li>
+					<a href="/board/updboard?Id=@Model.Id&BoardName=@Model.BoardName&BoardThematics=@Model.BoardThematics">Редактировать доску</a>
+				</li>
+				<li>
+					<span class="opener">Блоки</span>
+					<ul>
+						@foreach (var block in Model.Blocks)
+						{
+							<li>
+								<a href="/block/index?id=@Html.DisplayFor(modelItem => block.Id)">
+								@Html.DisplayFor(modelItem => block.BlockName)</a>
+							</li>
+						}
+						<li><a href="/block/addblock?boardId=@Model.Id.ToString()"><strong>Добавить блок</strong></a></li>
+					</ul>
+				</li>
+				<li><a href="/board/deleteboard?boardId=@Model.Id">Удалить доску</a></li>
+			</ul>
+		</nav>
+
+		<!-- Section -->
+		<section>
+			<header class="major">
+				<h2>Контакты</h2>
+			</header>
+			<p>Кафедра основана в 1997 году на факультете Информационных систем и технологий.</p>
+			<ul class="contact">
+				<li class="icon solid fa-envelope"><a href="#">jng@ulstu.ru</a></li>
+				<li class="icon solid fa-phone">(8422) 77-80-79</li>
+				<li class="icon solid fa-home">
+					432027, г. Ульяновск, <br />
+					ул. Северный Венец, 32, <br />
+					3 учебный корпус, ауд.422
+				</li>
+			</ul>
+		</section>
+
+		<!-- Footer -->
+		<footer id="footer">
+			<p class="copyright">&copy; 2024 – Кафедра "Информационные системы"</p>
+		</footer>
+
+	</div>
+</div>

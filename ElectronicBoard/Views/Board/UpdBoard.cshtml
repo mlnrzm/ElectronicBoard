@@ -1,0 +1,42 @@
+﻿@model Board
+@{
+	ViewData["Title"] = "Upd Board Page";
+}
+
+<div id="main">
+	<div class="inner">
+		<section>
+			<!-- Form -->
+			<h3>Редактирование доски</h3>
+			<form method="post">
+				<div class="row gtr-uniform">
+
+					<div class="col-12">
+						<input type="hidden" name="id" id="demo-id" value=@Model.Id.ToString() placeholder="Id" />
+					</div>
+					<div class="col-12">
+						@if(Model.BoardName.Contains("Общая доска"))
+						{
+							<input readonly type="text" name="name" id="demo-name" value="@Model.BoardName" placeholder="Название"/>
+						}
+						else
+						{
+							<input type="text" name="name" id="demo-name" value="@Model.BoardName" placeholder="Название" />
+						}
+					</div>
+					<div class="col-12">
+						<input type="text" name="thematic" id="demo-desc" value="@Model.BoardThematics" placeholder="Тематика" />
+					</div>
+
+					<div class="col-12">
+						<ul class="actions">
+							<li><input type="submit" value="Сохранить" class="primary" /></li>
+							<li><a href="javascript: history.go(-1)" class="button">Отмена</a></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+
+		</section>
+	</div>
+</div>

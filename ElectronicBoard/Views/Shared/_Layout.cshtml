@@ -1,0 +1,52 @@
+﻿@{
+	List<Board> boards = Program.Boards;
+	Participant part = Program.Participant;
+}
+<!DOCTYPE HTML>
+<html>
+	<head>
+		@await Html.PartialAsync("MetatagsPartial")
+		@await Html.PartialAsync("CssPartial")
+	</head>
+	<body class="is-preload">
+		<!-- Nav -->
+		<nav id="nav">
+			<ul>
+			@if (boards != null)
+			{
+				<li class="current"><a href="/board/index?BoardName=Общая%20доска" class="logo"><strong>Главная</strong></a></li>
+				<li>
+					<a>Доски</a>
+					<ul>
+
+						@foreach (var board in boards)
+						{
+							<li>
+								<a href="/board/index?Id=@board.Id&BoardName=@board.BoardName&BoardThematics=@board.BoardThematics">
+									@board.BoardName
+								</a>
+							</li>
+						}
+						<li class="pom"><a href="/board/addboard"><strong>Создать доску</strong></a></li>
+					</ul>
+				</li>
+
+			}
+			@if(part != null)
+			{
+				<li style="float: right"><a href="/participant/profile?partId=@part.Id">Профиль</a></li>
+			}
+		</ul>
+
+		</nav>
+
+		<!-- Wrapper -->
+		<div id="wrapper">
+			@RenderBody()
+		</div>
+
+		@await Html.PartialAsync("ScriptsPartial")
+		@await Component.InvokeAsync("Notyf")
+		@RenderSection("Scripts", required: false)
+	</body>
+</html>

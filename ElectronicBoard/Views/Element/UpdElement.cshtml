@@ -1,0 +1,44 @@
+﻿@model SimpleElement
+
+<div id="main">
+	<div class="inner">
+		<section>
+			<!-- Form -->
+			<header class="major">
+				<h2>Редактирование элемента</h2>
+			</header>
+			<form method="post" enctype="multipart/form-data">
+				<div class="row gtr-uniform">
+
+					<!-- Id элемента и доски -->
+					<div class="col-12">
+						<input type="hidden" name="id" id="id" value=@Model.Id.ToString() placeholder="id" />
+					</div>
+					<div class="col-12">
+						<input type="hidden" name="blockId" id="blockId" value=@Model.BlockId.ToString() placeholder="blockId" />
+					</div>
+
+					<div class="col-12">
+						<input type="text" name="name" id="demo-name" value="@Model.SimpleElementName" placeholder="Название" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="text" id="demo-text" value="@Model.SimpleElementText" placeholder="Текст" />
+					</div>
+					<!-- Изображение -->
+					<div class="col-12">
+						<label for="pict">Загрузить новое изображение:</label>
+						<input id="pict" name="pict" type="file" class="form-control" value=@ViewBag.Picture />
+						<input type="checkbox" id="del-pic" name="delpic">
+						<label for="del-pic">Удалить текущее изображение</label>
+					</div>
+					<div class="col-12">
+						<ul class="actions">
+							<li><input type="submit" value="Сохранить" class="primary" /></li>
+							<li><a href="javascript: history.go(-1)" class="button">Отмена</a></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+		</section>
+	</div>
+</div>

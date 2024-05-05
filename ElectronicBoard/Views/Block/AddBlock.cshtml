@@ -1,0 +1,31 @@
+﻿<div id="main">
+	<div class="inner">
+		<section>
+			<!-- Form -->
+			<h3>Новый блок</h3>
+			<form method="post">
+				<div class="row gtr-uniform">
+
+					<div class="col-12">
+						<input type="hidden" name="boardId" id="boardId" value=@ViewData["boardId"] placeholder="boardId" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="name" id="demo-name" value="" placeholder="Название" />
+					</div>
+					<!-- Отображать в доске при открытии/скрывать -->
+					<div class="col-12">
+						<input type="checkbox" id="demo-copy" name="copy">
+						<label for="demo-copy">Отображать на доске при открытии</label>
+					</div>
+					<div class="col-12">
+						<ul class="actions">
+							<li><input type="submit" value="Сохранить" class="primary" /></li>
+							<li><a href="javascript: history.go(-1)" class="button">Отмена</a></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+
+		</section>
+	</div>
+</div>

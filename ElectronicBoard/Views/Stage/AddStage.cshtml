@@ -1,0 +1,61 @@
+﻿<div id="main">
+	<div class="inner">
+		<section>
+			<!-- Form -->
+			<header class="major">
+				<h2>Добавление этапа проекта</h2>
+			</header>
+			<form method="post" enctype="multipart/form-data">
+				<div class="row gtr-uniform">
+
+					<div class="col-12">
+						<input type="hidden" name="projectId" id="projectId" value=@ViewData["projectId"] placeholder="projectId" />
+					</div>
+
+					<div class="col-12">
+						<input type="hidden" name="blockId" id="blockId" value=@ViewData["blockId"] placeholder="blockId" />
+					</div>
+
+					<div class="col-12">
+						<input type="text" name="name" id="demo-name" value="" placeholder="Название" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="text" id="demo-text" value="" placeholder="Текст" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="desc" id="demo-text" value="" placeholder="Описание" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="status" id="demo-text" value="" placeholder="Статус" />
+					</div>
+
+					<!-- Изображение -->
+					<div class="col-12">
+						<label for="pict">Изображение:</label>
+						<input id="pict" name="pict" type="file" class="form-control" />
+					</div>
+
+					<!-- Начало проведения -->
+					<div class="col-12">
+						<label for="start">Дата начала:</label>
+						<input type="date" id="start" name="start" value="2024-01-01" min="2024-01-01" />
+					</div>
+
+					<!-- Окончание проведения -->
+					<div class="col-12">
+						<label for="finish">Дата окончания:</label>
+						<input type="date" id="finish" name="finish" value="2024-01-02" min="2024-01-01" />
+					</div>
+
+					<div class="col-12">
+						<ul class="actions">
+							<li><input type="submit" value="Сохранить" class="primary" /></li>
+							<li><a href="javascript: history.go(-1)" class="button">Отмена</a></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+		</section>
+	</div>
+</div>
+

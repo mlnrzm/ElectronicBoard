@@ -1,0 +1,59 @@
+﻿@model Sticker
+<div id="main">
+	<div class="inner">
+		<section>
+			<!-- Form -->
+			<header class="major">
+				<h2>Редактирование стикера</h2>
+			</header>
+			<form method="post" enctype="multipart/form-data">
+				<div class="row gtr-uniform">
+
+					<div class="col-12">
+						<input type="hidden" name="id" id="id" value=@Model.Id placeholder="id" />
+					</div>
+					<div class="col-12">
+						<input type="hidden" name="blockId" id="blockId" value=@ViewData["blockId"] placeholder="blockId" />
+					</div>
+					<div class="col-12">
+						<input type="hidden" name="partId" id="partId" value=@ViewData["partId"] placeholder="partId" />
+					</div>
+					<div class="col-12">
+						<input type="hidden" name="projectId" id="projectId" value=@ViewData["projectId"] placeholder="projectId" />
+					</div>
+					<div class="col-12">
+						<input type="hidden" name="eventId" id="eventId" value=@ViewData["eventId"] placeholder="eventId" />
+					</div>
+					<div class="col-12">
+						<input type="hidden" name="elementId" id="elementId" value=@ViewData["elementId"] placeholder="elementId" />
+					</div>
+					<div class="col-12">
+						<input type="hidden" name="grantId" id="grantId" value=@ViewData["grantId"] placeholder="grantId" />
+					</div>
+
+					<div class="col-12">
+						<input type="text" name="desc" id="demo-text" value="@Model.StickerDescription" placeholder="Текст" />
+					</div>
+					<!-- Изображение -->
+					<div class="col-12">
+						<label for="pict">Загрузить новое изображение:</label>
+						<input id="pict" name="pict" type="file" class="form-control" value=@ViewBag.Picture />
+						<input type="checkbox" id="del-pic" name="delpic">
+						<label for="del-pic">Удалить текущее изображение</label>
+					</div>
+					<div class="col-12">
+						<ul class="actions">
+							<li><input type="submit" value="Сохранить" class="primary" /></li>
+							<li><a href="javascript: history.go(-1)" class="button">Отмена</a></li>
+						</ul>
+					</div>
+					<div class="col-12">
+						<ul class="actions">
+							<li><a href="/sticker/deletesticker?id=@Model.Id&blockId=@ViewData["blockId"]">Удалить</a></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+		</section>
+	</div>
+</div>

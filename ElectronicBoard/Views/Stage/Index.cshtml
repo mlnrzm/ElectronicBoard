@@ -1,0 +1,116 @@
+﻿@model Stage
+@{
+	ViewData["Title"] = "Stage Page";
+}
+
+<!-- Main -->
+<div id="main">
+	<div class="inner">
+
+		<!-- Banner -->
+		<section id="banner">
+			<div class="content">
+				<header>
+					<h1>
+						<span width="12px" height="12px" background="red" display="inline-block"></span> @Model.StageName
+					</h1>
+					<p>Этап проекта @ViewBag.Project.ProjectName</p>
+					<p>Блок: @ViewBag.Block.BlockName</p>
+					<p>Доска: @ViewBag.Board.BoardName</p>
+				</header>
+
+				<p>Описание: @Model.StageDescription</p>
+				<p>Даты: @Model.DateStart - @Model.DateFinish</p>
+				<p>Статус: @Model.Status</p>
+
+				<p>@Model.StageText</p>
+				<ul class="actions">
+					<li><a href="/stage/updstage?stageId=@Model.Id" class="button big">Редактировать</a></li>
+				</ul>
+			</div>
+			<div>
+				<span class="image object">
+					<img src="@ViewBag.Picture" alt="" />
+				</span>
+			</div>
+		</section>
+
+		<!-- Файлы -->
+		<section>
+			<header class="major">
+				<h2>Файлы</h2>
+			</header>
+			<div class="features">
+				@foreach (File file in @ViewBag.Files)
+				{
+					<article>
+						<div class="content">
+							<h4><a href="/file/openfile?blockId=@ViewBag.Block.Id&Id=@file.Id" download="@Html.DisplayFor(modelItem => file.FileName)">@Html.DisplayFor(modelItem => file.FileName)</a></h4>
+							<a href="/file/deletefile?blockId=@ViewBag.Block.Id&Id=@file.Id">Удалить</a>
+						</div>
+					</article>
+				}
+			</div>
+			<ul class="actions">
+				<li><a href="/file/addfile?blockId=@ViewBag.Block.Id&projectId=&elementId=&eventId=&partId=&grantId=&stageId=@Model.Id&articleId=" class="button">Загрузить файл</a></li>
+			</ul>
+		</section>
+	</div>
+</div>
+
+<!-- Sidebar -->
+<div id="sidebar">
+	<div class="inner">
+
+		<!-- Menu -->
+		<nav id="menu">
+			<header class="major">
+				<h2>Меню</h2>
+			</header>
+			<ul>
+				<li>
+					<a href="/board/updboard?Id=@ViewBag.Board.Id&BoardName=@ViewBag.Board.BoardName&BoardThematics=@ViewBag.Board.BoardThematics">Редактировать доску</a>
+				</li>
+				<li>
+					<span class="opener">Блоки</span>
+					<ul>
+						@foreach (Block block in @ViewBag.Board.Blocks)
+						{
+							<li>
+								<a href="/block/index?id=@Html.DisplayFor(modelItem => block.Id)">
+									@Html.DisplayFor(modelItem => block.BlockName)
+								</a>
+							</li>
+						}
+						<li><a href="/block/addblock?boardId=@ViewBag.Board.Id.ToString()"><strong>Добавить блок</strong></a></li>
+					</ul>
+				</li>
+				<li><a href="/board/deleteboard?boardId=@ViewBag.Board.Id">Удалить доску</a></li>
+			</ul>
+		</nav>
+
+		<!-- Section -->
+		<section>
+			<header class="major">
+				<h2>Контакты</h2>
+			</header>
+			<p>Кафедра основана в 1997 году на факультете Информационных систем и технологий.</p>
+			<ul class="contact">
+				<li class="icon solid fa-envelope"><a href="#">jng@ulstu.ru</a></li>
+				<li class="icon solid fa-phone">(8422) 77-80-79</li>
+				<li class="icon solid fa-home">
+					432027, г. Ульяновск, <br />
+					ул. Северный Венец, 32, <br />
+					3 учебный корпус, ауд.422
+				</li>
+			</ul>
+		</section>
+
+		<!-- Footer -->
+		<footer id="footer">
+			<p class="copyright">&copy; 2024 – Кафедра "Информационные системы"</p>
+		</footer>
+
+	</div>
+</div>
+

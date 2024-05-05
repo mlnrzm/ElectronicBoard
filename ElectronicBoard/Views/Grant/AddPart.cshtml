@@ -1,0 +1,36 @@
+﻿<div id="main">
+	<div class="inner">
+		<section>
+			<!-- Form -->
+			<header class="major">
+				<h2>Добавление участника гранта</h2>
+			</header>
+			<form method="post">
+				<div class="row gtr-uniform">
+
+					<div class="col-12">
+						<input type="hidden" name="grantId" id="grantId" value=@ViewBag.Grant.Id placeholder="grantId" />
+					</div>
+
+					<!-- Выбрать участника -->
+					<div class="col-12">
+						<select name="partId" id="demo-category">
+							<option value="0" disabled selected>- Участник -</option>
+							@foreach (Participant ev in ViewBag.Participants)
+							{
+								<option value="@ev.Id">@ev.ParticipantFIO</option>
+							}
+						</select>
+					</div>
+
+					<div class="col-12">
+						<ul class="actions">
+							<li><input type="submit" value="Добавить" class="primary" /></li>
+							<li><a href="javascript: history.go(-1)" class="button">Отмена</a></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+		</section>
+	</div>
+</div>

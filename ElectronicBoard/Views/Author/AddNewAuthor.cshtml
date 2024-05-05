@@ -1,0 +1,51 @@
+﻿<div id="main">
+	<div class="inner">
+		<section>
+			<!-- Form -->
+			<header class="major">
+				<h2>Добавление автора</h2>
+			</header>
+			<form method="post">
+				<div class="row gtr-uniform">
+
+					<div class="col-12">
+						<input type="hidden" name="articleId" id="articleId" value=@ViewData["articleId"] placeholder="articleId" />
+					</div>
+					<div class="col-12">
+						<input type="hidden" name="blockId" id="blockId" value=@ViewData["blockId"] placeholder="blockId" />
+					</div>
+
+					<div class="col-12">
+						<input type="text" name="name" id="demo-name" value="" placeholder="Название" />
+					</div>
+					<div class="col-12">
+						<input type="email" name="email" id="demo-text" value="" placeholder="Email" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="organization" id="demo-name" value="" placeholder="Организация" />
+					</div>
+
+					<!-- Выбрать участника -->
+					<div class="col-12">
+						<select name="partId" id="demo-category">
+							<option value="" disabled selected>- Участник -</option>
+							<option value="0">Не выбран</option>
+							
+							@foreach (Participant part in ViewBag.Participants)
+							{
+								<option value="@part.Id">@part.ParticipantFIO</option>
+							}
+						</select>
+					</div>
+
+					<div class="col-12">
+						<ul class="actions">
+							<li><input type="submit" value="Сохранить" class="primary" /></li>
+							<li><a href="/author/addauthor?blockId=@ViewData["blockId"]&articleId=@ViewData["articleId"]" class="button">Отмена</a></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+		</section>
+	</div>
+</div>

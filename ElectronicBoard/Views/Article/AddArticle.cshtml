@@ -1,0 +1,65 @@
+﻿<div id="main">
+	<div class="inner">
+		<section>
+			<!-- Form -->
+			<header class="major">
+				<h2>Добавление статьи</h2>
+			</header>
+			<form method="post" enctype="multipart/form-data">
+				<div class="row gtr-uniform">
+
+					<div class="col-12">
+						<input type="hidden" name="eventId" id="eventId" value=@ViewData["eventId"] placeholder="eventId" />
+					</div>
+
+					<div class="col-12">
+						<input type="hidden" name="blockId" id="blockId" value=@ViewData["blockId"] placeholder="blockId" />
+					</div>
+
+					<div class="col-12">
+						<input type="text" name="name" id="demo-name" value="" placeholder="Название" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="text" id="demo-text" value="" placeholder="Текст" />
+					</div>
+
+					<div class="col-12">
+						<input type="text" name="place" id="demo-text" value="" placeholder="Место издания" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="words" id="demo-text" value="" placeholder="Ключевые слова" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="annotation" id="demo-text" value="" placeholder="Аннотация" />
+					</div>
+
+					<!-- Изображение -->
+					<div class="col-12">
+						<label for="pict">Изображение:</label>
+						<input id="pict" name="pict" type="file" class="form-control" />
+					</div>
+
+					<!-- Выбрать статус статьи -->
+					<div class="col-12">
+						<select name="category" id="demo-category">
+							<option value="" disabled selected>- Статус -</option>
+							<option value="0">Планируется</option>
+							<option value="1">Отправлена</option>
+							<option value="2">Проверка</option>
+							<option value="3">Отклонена</option>
+							<option value="4">Сборник</option>
+							<option value="5">Опубликована</option>
+						</select>
+					</div>
+
+					<div class="col-12">
+						<ul class="actions">
+							<li><input type="submit" value="Сохранить" class="primary" /></li>
+							<li><a href="javascript: history.go(-1)" class="button">Отмена</a></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+		</section>
+	</div>
+</div>

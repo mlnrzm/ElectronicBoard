@@ -1,0 +1,170 @@
+﻿@model Participant
+@{
+	ViewData["Title"] = "Participant Page";
+}
+
+<!-- Main -->
+<div id="main">
+	<div class="inner">
+
+		<!-- Banner -->
+		<section id="banner">
+			<div class="content">
+				<header>
+					<h1>
+						@Model.ParticipantFIO
+					</h1>
+					<p>Область научных интересов: @Model.ScientificInterests</p>
+					<p>Выполняемые задачи: @Model.ParticipantTasks</p>
+					<p>Рейтинг: @Model.ParticipantRating</p>
+
+				</header>
+			</div>
+			<div>
+				<span class="image object">
+					<img src="@ViewBag.Picture" alt="" />
+				</span>
+			</div>
+		</section>
+
+		<!-- Издания -->
+		<section>
+			<header class="major">
+				<h2>Публикации</h2>
+			</header>
+			<div class="content">
+				<p>@Model.ParticipantPublications</p>
+			</div>
+		</section>
+
+		<!-- Статьи -->
+		<section>
+			<header class="major">
+				<h2>Cтатьи</h2>
+			</header>
+			<div class="features">
+				@foreach (Article art in @ViewBag.Articles)
+				{
+					<article>
+						<div class="content">
+							<h4><a>@Html.DisplayFor(modelItem => art.ArticleName)</a></h4>
+						</div>
+					</article>
+				}
+			</div>
+		</section>
+
+		<!-- Патенты -->
+		<section>
+			<header class="major">
+				<h2>Патенты</h2>
+			</header>
+			<div class="content">
+				<p>@Model.ParticipantPatents</p>
+			</div>
+		</section>
+
+		<!-- Файлы -->
+		<section>
+			<header class="major">
+				<h2>Файлы</h2>
+			</header>
+			<div class="features">
+				@foreach (File file in @ViewBag.Files)
+				{
+					<article>
+						<div class="content">
+							<h4><a href="/file/openfile?blockId=@ViewBag.Block.Id&Id=@file.Id" download="@Html.DisplayFor(modelItem => file.FileName)">@Html.DisplayFor(modelItem => file.FileName)</a></h4>
+							<a href="/file/deletefile?blockId=@ViewBag.Block.Id&Id=@file.Id">Удалить</a>
+						</div>
+					</article>
+				}
+			</div>
+			<ul class="actions">
+				<li><a href="/file/addfile?blockId=@ViewBag.Block.Id&projectId=&elementId=&eventId=&partId=@Model.Id&grantId=&stageId=&articleId=" class="button">Загрузить файл</a></li>
+			</ul>
+		</section>
+
+		<!-- Стикеры -->
+		<section>
+			<header class="major">
+				<h2>Стикеры</h2>
+			</header>
+			<div class="features">
+				@if (ViewBag.Stickers != null)
+				{
+					@foreach (Sticker stick in ViewBag.Stickers)
+					{
+						<article>
+							<span class="stick-image">
+								<img src="data:image/jpg;base64,@Convert.ToBase64String(stick.Picture)" />
+							</span>
+							<div class="content">
+								<h4><a href="/sticker/updsticker?id=@stick.Id&blockId=@ViewBag.Block.Id&projectId=&elementId=&eventId=&partId=@Model.Id&grantId=">@stick.StickerDescription</a></h4>
+							</div>
+						</article>
+					}
+				}
+			</div>
+			<ul class="actions">
+				<li><a href="/sticker/addsticker?blockId=@ViewBag.Block.Id&projectId=&elementId=&eventId=&partId=@Model.Id&grantId=" class="button">Прикрепить стикер</a></li>
+			</ul>
+		</section>
+	</div>
+</div>
+
+<!-- Sidebar -->
+<div id="sidebar">
+	<div class="inner">
+
+		<!-- Menu -->
+		<nav id="menu">
+			<header class="major">
+				<h2>Меню</h2>
+			</header>
+			<ul>
+				<li>
+					<a href="/board/updboard?Id=@ViewBag.Board.Id&BoardName=@ViewBag.Board.BoardName&BoardThematics=@ViewBag.Board.BoardThematics">Редактировать доску</a>
+				</li>
+				<li>
+					<span class="opener">Блоки</span>
+					<ul>
+						@foreach (Block block in @ViewBag.Board.Blocks)
+						{
+							<li>
+								<a href="/block/index?id=@Html.DisplayFor(modelItem => block.Id)">
+									@Html.DisplayFor(modelItem => block.BlockName)
+								</a>
+							</li>
+						}
+						<li><a href="/block/addblock?boardId=@ViewBag.Board.Id.ToString()"><strong>Добавить блок</strong></a></li>
+					</ul>
+				</li>
+				<li><a href="/board/deleteboard?boardId=@ViewBag.Board.Id">Удалить доску</a></li>
+			</ul>
+		</nav>
+
+		<!-- Section -->
+		<section>
+			<header class="major">
+				<h2>Контакты</h2>
+			</header>
+			<p>Кафедра основана в 1997 году на факультете Информационных систем и технологий.</p>
+			<ul class="contact">
+				<li class="icon solid fa-envelope"><a href="#">jng@ulstu.ru</a></li>
+				<li class="icon solid fa-phone">(8422) 77-80-79</li>
+				<li class="icon solid fa-home">
+					432027, г. Ульяновск, <br />
+					ул. Северный Венец, 32, <br />
+					3 учебный корпус, ауд.422
+				</li>
+			</ul>
+		</section>
+
+		<!-- Footer -->
+		<footer id="footer">
+			<p class="copyright">&copy; 2024 – Кафедра "Информационные системы"</p>
+		</footer>
+
+	</div>
+</div>

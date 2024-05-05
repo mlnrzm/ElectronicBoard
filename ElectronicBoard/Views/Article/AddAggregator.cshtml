@@ -1,0 +1,42 @@
+﻿<div id="main">
+	<div class="inner">
+		<section>
+			<!-- Form -->
+			<header class="major">
+				<h2>Добавление агрегатора статьи</h2>
+			</header>
+			<form method="post">
+				<div class="row gtr-uniform">
+
+					<div class="col-12">
+						<input type="hidden" name="blockId" id="blockId" value=@ViewData["blockId"] placeholder="blockId" />
+					</div>
+					<div class="col-12">
+						<input type="hidden" name="articleId" id="articleId" value=@ViewData["articleId"] placeholder="articleId" />
+					</div>
+
+					<!-- Выбрать мероприятие -->
+					<div class="col-12">
+						<select name="aggregatorId" id="demo-category">
+							<option value="0" disabled selected>- Агрегатор -</option>
+							@foreach (Aggregator aggr in ViewBag.Aggregators)
+							{
+								<option value="@aggr.Id">@aggr.AggregatorName</option>
+							}
+						</select>
+					</div>
+
+					<div class="col-12">
+						<ul class="actions">
+							<li><input type="submit" value="Добавить" class="primary" /></li>
+							<li><a href="javascript: history.go(-1)" class="button">Отмена</a></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+		</section>
+		<ul class="actions">
+			<li><a href="/article/addnewaggregator?blockId=@ViewData["blockId"]&articleId=@ViewData["articleId"]" class="button">Добавить нового агрегатора</a></li>
+		</ul>
+	</div>
+</div>

@@ -1,0 +1,80 @@
+﻿@model Stage
+@{
+
+	@if (Model.DateStart != null && Model.DateFinish != null)
+	{
+		DateTime datestart = (DateTime)Model.DateStart;
+		DateTime datefinish = (DateTime)Model.DateFinish;
+		ViewData["DateStart"] = datestart.ToString("yyyy-MM-dd");
+		ViewData["DateFinish"] = datefinish.ToString("yyyy-MM-dd");
+	}
+	else
+	{
+		ViewData["DateStart"] = "";
+		ViewData["DateFinish"] = "";
+	}
+}
+<div id="main">
+	<div class="inner">
+		<section>
+			<!-- Form -->
+			<header class="major">
+				<h2>Редактирование этапа проекта</h2>
+			</header>
+			<form method="post" enctype="multipart/form-data">
+				<div class="row gtr-uniform">
+
+					<div class="col-12">
+						<input type="hidden" name="id" id="id" value=@Model.Id placeholder="id" />
+					</div>
+					<div class="col-12">
+						<input type="hidden" name="blockId" id="blockId" value=@ViewData["blockId"] placeholder="blockId" />
+					</div>
+					<div class="col-12">
+						<input type="hidden" name="projectId" id="projectId" value=@ViewData["projectId"] placeholder="projectId" />
+					</div>
+
+					<div class="col-12">
+						<input type="text" name="name" id="demo-name" value="@Model.StageName" placeholder="Название" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="text" id="demo-text" value="@Model.StageText" placeholder="Текст" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="desc" id="demo-text" value="@Model.StageDescription" placeholder="Описание" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="status" id="demo-text" value="@Model.Status" placeholder="Статус" />
+					</div>
+
+					<!-- Изображение -->
+					<div class="col-12">
+						<label for="pict">Загрузить новое изображение:</label>
+						<input id="pict" name="pict" type="file" class="form-control" value=@ViewBag.Picture />
+						<input type="checkbox" id="del-pic" name="delpic">
+						<label for="del-pic">Удалить текущее изображение</label>
+					</div>
+
+					<!-- Начало проведения -->
+					<div class="col-12">
+						<label for="start">Дата начала проведения:</label>
+						<input type="date" id="start" name="start" value="@ViewData["DateStart"]" min="2024-01-01" />
+					</div>
+
+					<!-- Окончание проведения -->
+					<div class="col-12">
+						<label for="finish">Дата окончания проведения:</label>
+						<input type="date" id="finish" name="finish" value="@ViewData["DateFinish"]" min="2024-01-01" />
+					</div>
+
+					<div class="col-12">
+						<ul class="actions">
+							<li><input type="submit" value="Сохранить" class="primary" /></li>
+							<li><a href="javascript: history.go(-1)" class="button">Отмена</a></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+		</section>
+	</div>
+</div>

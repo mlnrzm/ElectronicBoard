@@ -1,0 +1,169 @@
+﻿@model Grant
+@{
+	ViewData["Title"] = "Grant Page";
+}
+
+<!-- Main -->
+<div id="main">
+	<div class="inner">
+
+		<!-- Banner -->
+		<section id="banner">
+			<div class="content">
+
+				<header>
+					<h1>
+						@Model.GrantName
+					</h1>
+					<p>Блок: @ViewBag.Block.BlockName</p>
+					<p>Доска: @ViewBag.Board.BoardName</p>
+				</header>
+
+				<p>Описание: @Model.GrantDescription</p>
+				<p>Источник: @Model.GrantSource</p>
+				<p>Срок подачи заявки: @Model.GrantDeadline</p>
+
+				<p>Срок начала выполнения: @Model.GrantDeadlineStart</p>
+				<p>Срок завершения выполнения: @Model.GrantDeadlineFinish</p>
+				<ul class="actions">
+					<li><a href="/grant/updgrant?Id=@Model.Id&BlockId=@Model.BlockId" class="button">Редактировать</a></li>
+				</ul>
+			</div>
+			<div>
+				<span class="image object">
+					<img src="@ViewBag.Picture" alt="" />
+				</span>
+			</div>
+		</section>
+
+		<!-- Участники -->
+		<section>
+			<header class="major">
+				<h2>Участники</h2>
+			</header>
+			<div class="features">
+
+				@foreach(Participant p in ViewBag.Participants){
+					<article>
+						<div class="content">
+							<h4><a href="/participant/index?partId=@p.Id&blockId=@ViewBag.Block.Id">@p.ParticipantFIO</a></h4>
+							<a href="/grant/delpart?grantId=@Model.Id&partId=@p.Id">Удалить</a>
+						</div>
+					</article>
+				}
+			</div>
+			<ul class="actions">
+				<li><a href="/grant/addpart?grantId=@Model.Id" class="button">Добавить участника</a></li>
+			</ul>
+		</section>
+
+		<!-- Файлы -->
+		<section>
+			<header class="major">
+				<h2>Файлы</h2>
+			</header>
+			<div class="features">
+				@foreach (File file in @ViewBag.Files)
+				{
+					<article>
+						<div class="content">
+							<h4><a href="/file/openfile?blockId=@ViewBag.Block.Id&Id=@file.Id" download="@Html.DisplayFor(modelItem => file.FileName)">@Html.DisplayFor(modelItem => file.FileName)</a></h4>
+							<a href="/file/deletefile?blockId=@ViewBag.Block.Id&Id=@file.Id">Удалить</a>
+						</div>
+					</article>
+				}
+			</div>
+			<ul class="actions">
+				<li><a href="/file/addfile?blockId=@ViewBag.Block.Id&projectId=&elementId=&eventId=&partId=&grantId=@Model.Id&stageId=&articleId=" class="button">Загрузить файл</a></li>
+			</ul>
+		</section>
+
+		<!-- Стикеры -->
+		<section>
+			<header class="major">
+				<h2>Стикеры</h2>
+			</header>
+			<div class="features">
+				@if (ViewBag.Stickers != null)
+				{
+					@foreach (Sticker stick in ViewBag.Stickers)
+					{
+						<article>
+							<span class="stick-image">
+								<img src="data:image/jpg;base64,@Convert.ToBase64String(stick.Picture)" />
+							</span>
+							<div class="content">
+								<h4><a href="/sticker/updsticker?id=@stick.Id&blockId=@ViewBag.Block.Id&projectId=&elementId=&eventId=&partId=&grantId=@Model.Id">@stick.StickerDescription</a></h4>
+							</div>
+						</article>
+					}
+				}
+			</div>
+			<ul class="actions">
+				<li><a href="/sticker/addsticker?blockId=@ViewBag.Block.Id&projectId=&elementId=&eventId=&partId=&grantId=@Model.Id" class="button">Прикрепить стикер</a></li>
+			</ul>
+		</section>
+		<section>
+			<ul class="actions">
+				<li><a href="/grant/deletegrant?grantId=@Model.Id">Удалить</a></li>
+			</ul>
+		</section>
+
+	</div>
+</div>
+
+<!-- Sidebar -->
+<div id="sidebar">
+	<div class="inner">
+
+		<!-- Menu -->
+		<nav id="menu">
+			<header class="major">
+				<h2>Меню</h2>
+			</header>
+			<ul>
+				<li>
+					<a href="/board/updboard?Id=@ViewBag.Board.Id&BoardName=@ViewBag.Board.BoardName&BoardThematics=@ViewBag.Board.BoardThematics">Редактировать доску</a>
+				</li>
+				<li>
+					<span class="opener">Блоки</span>
+					<ul>
+						@foreach (Block block in @ViewBag.Board.Blocks)
+						{
+							<li>
+								<a href="/block/index?id=@Html.DisplayFor(modelItem => block.Id)">
+									@Html.DisplayFor(modelItem => block.BlockName)
+								</a>
+							</li>
+						}
+						<li><a href="/block/addblock?boardId=@ViewBag.Board.Id.ToString()"><strong>Добавить блок</strong></a></li>
+					</ul>
+				</li>
+				<li><a href="/board/deleteboard?boardId=@ViewBag.Board.Id">Удалить доску</a></li>
+			</ul>
+		</nav>
+
+		<!-- Section -->
+		<section>
+			<header class="major">
+				<h2>Контакты</h2>
+			</header>
+			<p>Кафедра основана в 1997 году на факультете Информационных систем и технологий.</p>
+			<ul class="contact">
+				<li class="icon solid fa-envelope"><a href="#">jng@ulstu.ru</a></li>
+				<li class="icon solid fa-phone">(8422) 77-80-79</li>
+				<li class="icon solid fa-home">
+					432027, г. Ульяновск, <br />
+					ул. Северный Венец, 32, <br />
+					3 учебный корпус, ауд.422
+				</li>
+			</ul>
+		</section>
+
+		<!-- Footer -->
+		<footer id="footer">
+			<p class="copyright">&copy; 2024 – Кафедра "Информационные системы"</p>
+		</footer>
+
+	</div>
+</div>

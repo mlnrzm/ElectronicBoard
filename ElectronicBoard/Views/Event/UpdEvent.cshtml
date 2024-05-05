@@ -1,0 +1,83 @@
+﻿@model Event
+
+<div id="main">
+	<div class="inner">
+		<section>
+			<!-- Form -->
+			<header class="major">
+				<h2>Редактирование мероприятия</h2>
+			</header>
+			<form method="post" enctype="multipart/form-data">
+				<div class="row gtr-uniform">
+
+					<div class="col-12">
+						<input type="hidden" name="id" id="id" value=@Model.Id placeholder="id" />
+					</div>
+
+					<div class="col-12">
+						<input type="hidden" name="blockId" id="blockId" value=@ViewData["blockId"] placeholder="blockId" />
+					</div>
+
+					<div class="col-12">
+						<input type="text" name="name" id="demo-name" value="@Model.EventName" placeholder="Название" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="text" id="demo-text" value="@Model.EventText" placeholder="Текст" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="place" id="demo-text" value="@Model.EventPlace" placeholder="Место проведения" />
+					</div>
+
+					<!-- Изображение -->
+					<div class="col-12">
+						<label for="pict">Загрузить новое изображение:</label>
+						<input id="pict" name="pict" type="file" class="form-control" value=@ViewBag.Picture />
+						<input type="checkbox" id="del-pic" name="delpic">
+						<label for="del-pic">Удалить текущее изображение</label>
+					</div>
+
+					<!-- Начало проведения -->
+					<div class="col-12">
+						<label for="start">Дата начала проведения:</label>
+						<input type="date" id="start" name="datestart" value="@Model.EventDateStart.ToString("yyyy-MM-dd")" min="2024-01-01" />
+					</div>
+
+					<div class="col-12">
+						<label for="datestartcolor"> Цвет наступления срока проведения: </label>
+						<input type="color" id="datestartcolor" name="datestartcolor" value="@Model.EventStartColor" />
+					</div>
+
+					<!-- Окончание проведения -->
+					<div class="col-12">
+						<label for="finish">Дата окончания проведения:</label>
+						<input type="date" id="finish" name="datefinish" value="@Model.EventDateFinish.ToString("yyyy-MM-dd")" min="2024-01-01" />
+					</div>
+
+					<div class="col-12">
+						<label for="datefinishcolor"> Цвет наступления окончания срока проведения: </label>
+						<input type="color" id="datefinishcolor" name="datefinishcolor" value="@Model.EventFinishColor" />
+					</div>
+
+					<!-- Окончание приёма статей -->
+					<div class="col-12">
+						<label for="article">Дата окончания приёма статей:</label>
+						<input type="date" id="article" name="datefinisharticle" value="@Model.EventDateFinishArticle.ToString("yyyy-MM-dd")" min="2024-01-01" />
+					</div>
+
+					<div class="col-12">
+						<label for="datefinisharticlecolor"> Цвет наступления окончания срока приёма статей: </label>
+						<input type="color" id="datefinisharticlecolor" name="datefinisharticlecolor" value="@Model.EventFinishArticleColor" />
+					</div>
+
+					<div class="col-12">
+						<ul class="actions">
+							<li><input type="submit" value="Сохранить" class="primary" /></li>
+							<li><a href="javascript: history.go(-1)" class="button">Отмена</a></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+		</section>
+	</div>
+</div>
+

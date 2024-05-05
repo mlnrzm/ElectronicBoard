@@ -1,0 +1,37 @@
+﻿<div id="main">
+	<div class="inner">
+		<section>
+			<!-- Form -->
+			<header class="major">
+				<h2>Загрузка файла</h2>
+			</header>
+			<form method="post" enctype="multipart/form-data">
+				<div class="row gtr-uniform">
+
+					<div class="col-12">
+						<input type="hidden" name="blockId" id="blockId" value=@ViewData["blockId"] placeholder="blockId" />
+						<input type="hidden" name="partId" id="partId" value=@ViewData["partId"] placeholder="partId" />
+						<input type="hidden" name="projectId" id="projectId" value=@ViewData["projectId"] placeholder="projectId" />
+						<input type="hidden" name="eventId" id="eventId" value=@ViewData["eventId"] placeholder="eventId" />
+						<input type="hidden" name="elementId" id="elementId" value=@ViewData["elementId"] placeholder="elementId" />
+						<input type="hidden" name="grantId" id="grantId" value=@ViewData["grantId"] placeholder="grantId" />
+						<input type="hidden" name="stageId" id="stageId" value=@ViewData["stageId"] placeholder="stageId" />
+						<input type="hidden" name="articleId" id="articleId" value=@ViewData["articleId"] placeholder="articleId" />
+					</div>
+
+					<!-- Изображение -->
+					<div class="col-12">
+						<label for="file">Файл:</label>
+						<input id="file" name="file" type="file" class="form-control" />
+					</div>
+					<div class="col-12">
+						<ul class="actions">
+							<li><input type="submit" value="Загрузить" class="primary" /></li>
+							<li><a href="javascript: history.go(-1)" class="button">Отмена</a></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+		</section>
+	</div>
+</div>

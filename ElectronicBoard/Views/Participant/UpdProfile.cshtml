@@ -1,0 +1,50 @@
+﻿@model Participant
+<div id="main">
+	<div class="inner">
+		<section>
+			<!-- Form -->
+			<header class="major">
+				<h2>Редактирование профиля</h2>
+			</header>
+			<form method="post" enctype="multipart/form-data">
+				<div class="row gtr-uniform">
+
+					<div class="col-12">
+						<input type="hidden" name="id" id="id" value=@Model.Id placeholder="id" />
+					</div>
+					<div class="col-12">
+						<input readonly type="text" name="name" id="name" value=@Model.ParticipantFIO placeholder="name" />
+					</div>
+
+					<div class="col-12">
+						<input type="text" name="patents" id="demo-text" value="@Model.ParticipantPatents" placeholder="Патенты" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="publics" id="demo-text" value="@Model.ParticipantPublications" placeholder="Публикации" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="tasks" id="demo-text" value="@Model.ParticipantTasks" placeholder="Задачи на кафедре" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="interests" id="demo-text" value="@Model.ScientificInterests" placeholder="Научные интересы" />
+					</div>
+
+					<!-- Изображение -->
+					<div class="col-12">
+						<label for="pict">Загрузить новое изображение:</label>
+						<input id="pict" name="pict" type="file" class="form-control" value=@ViewBag.Picture />
+						<input type="checkbox" id="del-pic" name="delpic">
+						<label for="del-pic">Удалить текущее изображение</label>
+					</div>
+
+					<div class="col-12">
+						<ul class="actions">
+							<li><input type="submit" value="Сохранить" class="primary" /></li>
+							<li><a href="javascript: history.go(-1)" class="button">Отмена</a></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+		</section>
+	</div>
+</div>

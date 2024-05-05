@@ -1,0 +1,75 @@
+﻿<div id="main">
+	<div class="inner">
+		<section>
+			<!-- Form -->
+			<header class="major">
+				<h2>Добавление нового мероприятия</h2>
+			</header>
+			<form method="post" enctype="multipart/form-data">
+				<div class="row gtr-uniform">
+
+					<div class="col-12">
+						<input type="hidden" name="blockId" id="blockId" value=@ViewData["blockId"] placeholder="blockId" />
+					</div>
+
+					<div class="col-12">
+						<input type="text" name="name" id="demo-name" value="" placeholder="Название" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="text" id="demo-text" value="" placeholder="Текст" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="place" id="demo-text" value="" placeholder="Место проведения" />
+					</div>
+
+					<!-- Изображение -->
+					<div class="col-12">
+						<label for="pict">Изображение:</label>
+						<input id="pict" name="pict" type="file" class="form-control" />
+					</div>
+
+					<!-- Начало проведения -->
+					<div class="col-12">
+						<label for="start">Дата начала проведения:</label>
+						<input type="date" id="start" name="datestart" value="2024-01-01" min="2024-01-01" />
+					</div>
+
+					<div class="col-12">
+						<label for="datestartcolor"> Цвет наступления срока проведения: </label>
+						<input type="color" id="datestartcolor" name="datestartcolor" value="#f6b73c" />
+					</div>
+
+					<!-- Окончание проведения -->
+					<div class="col-12">
+						<label for="finish">Дата окончания проведения:</label>
+						<input type="date" id="finish" name="datefinish" value="2024-01-02" min="2024-01-01" />
+					</div>
+
+					<div class="col-12">
+						<label for="datefinishcolor"> Цвет наступления окончания срока проведения: </label>
+						<input type="color" id="datefinishcolor" name="datefinishcolor" value="#e66465" />
+					</div>
+
+					<!-- Окончание приёма статей -->
+					<div class="col-12">
+						<label for="article">Дата окончания приёма статей:</label>
+						<input type="date" id="article" name="datefinisharticle" value="2024-01-02" min="2024-01-01" />
+					</div>
+
+					<div class="col-12">
+						<label for="datefinisharticlecolor"> Цвет наступления окончания срока приёма статей: </label>
+						<input type="color" id="datefinisharticlecolor" name="datefinisharticlecolor" value="#ff0000" />						
+					</div>
+
+					<div class="col-12">
+						<ul class="actions">
+							<li><input type="submit" value="Сохранить" class="primary" /></li>
+							<li><a href="/block/index?Id=@ViewData["blockId"]" class="button">Отмена</a></li>
+						</ul>
+					</div>
+
+				</div>
+			</form>
+		</section>
+	</div>
+</div>

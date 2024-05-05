@@ -1,0 +1,118 @@
+﻿@model Article
+
+<div id="main">
+	<div class="inner">
+		<section>
+			<!-- Form -->
+			<header class="major">
+				<h2>Редактирование статьи</h2>
+			</header>
+			<form method="post" enctype="multipart/form-data">
+				<div class="row gtr-uniform">
+
+					<!-- Id  -->
+					<div class="col-12">
+						<input type="hidden" name="id" id="id" value=@Model.Id.ToString() placeholder="id" />
+					</div>
+					<div class="col-12">
+						<input type="hidden" name="eventId" id="eventId" value=@ViewData["eventId"] placeholder="eventId" />
+					</div>
+
+					<div class="col-12">
+						<input type="hidden" name="blockId" id="blockId" value=@ViewData["blockId"] placeholder="blockId" />
+					</div>
+
+					<div class="col-12">
+						<input type="text" name="name" id="demo-name" value="@Model.ArticleName" placeholder="Название" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="text" id="demo-text" value="@Model.ArticleText" placeholder="Текст" />
+					</div>
+
+					<div class="col-12">
+						<input type="text" name="place" id="demo-text" value="@Model.ArticlePlaceOfPublication" placeholder="Место издания" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="words" id="demo-text" value="@Model.ArticleKeyWords" placeholder="Ключевые слова" />
+					</div>
+					<div class="col-12">
+						<input type="text" name="annotation" id="demo-text" value="@Model.ArticleAnnotation" placeholder="Аннотация" />
+					</div>
+
+					<!-- Изображение -->
+					<div class="col-12">
+						<label for="pict">Загрузить новое изображение:</label>
+						<input id="pict" name="pict" type="file" class="form-control" value=@ViewBag.Picture />
+						<input type="checkbox" id="del-pic" name="delpic">
+						<label for="del-pic">Удалить текущее изображение</label>
+					</div>
+
+					<!-- Выбрать статус статьи -->
+					<div class="col-12">
+						<select name="category" id="demo-category">
+
+							<option value="" disabled selected>- Статус -</option>
+
+							@if (@Model.ArticleStatus == StatusArticle.Планируется)
+							{
+								<option value="0" selected>Планируется</option>
+							}
+							else
+							{
+								<option value="0">Планируется</option>
+							}
+							@if (@Model.ArticleStatus == StatusArticle.Отправлена)
+							{
+								<option value="1" selected>Отправлена</option>
+							}
+							else
+							{
+								<option value="1">Отправлена</option>
+							}
+							@if (@Model.ArticleStatus == StatusArticle.Проверка)
+							{
+								<option value="2" selected>Проверка</option>
+							}
+							else
+							{
+								<option value="2">Проверка</option>
+							}
+							@if (@Model.ArticleStatus == StatusArticle.Отклонена)
+							{
+								<option value="3" selected>Отклонена</option>
+							}
+							else
+							{
+								<option value="3">Отклонена</option>
+							}
+							@if (@Model.ArticleStatus == StatusArticle.Сборник)
+							{
+								<option value="4" selected>Сборник</option>
+							}
+							else
+							{
+								<option value="4">Сборник</option>
+							}
+							@if (@Model.ArticleStatus == StatusArticle.Опубликована)
+							{
+								<option value="5" selected>Опубликована</option>
+							}
+							else
+							{
+								<option value="5">Опубликована</option>
+							}
+						</select>
+					</div>
+
+					<div class="col-12">
+						<ul class="actions">
+							<li><input type="submit" value="Сохранить" class="primary" /></li>
+							<li><a href="javascript: history.go(-1)" class="button">Отмена</a></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+		</section>
+	</div>
+</div>
+

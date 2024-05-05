@@ -1,0 +1,110 @@
+﻿@model Author
+@{
+	ViewData["Title"] = "Author Page";
+}
+
+<!-- Main -->
+<div id="main">
+	<div class="inner">
+
+		<!-- Banner -->
+		<section id="banner">
+			<div class="content">
+				<header>
+					<h1>
+						@Model.AuthorFIO
+					</h1>
+					<p>Email: @Model.AuthorEmail</p>
+					<p>Организация: @Model.AuthorOrganization</p>
+					@if (ViewBag.Participant != null)
+					{
+						<h4>Участник: <a href="/participant/index?partId=@ViewBag.Participant.Id&blockId=@ViewBag.Block.Id">@ViewBag.Participant.ParticipantFIO</a></h4>
+					}
+					<ul class="actions">
+						<li><a href="/author/updauthor?authorId=@Model.Id&blockId=@ViewBag.Block.Id&articleId=@ViewBag.Article.Id" class="button big">Редактировать</a></li>
+					</ul>
+				</header>
+			</div>
+		</section>
+
+		<!-- Статьи -->
+		<section>
+			<header class="major">
+				<h2>Статьи автора</h2>
+			</header>
+			<div class="features">
+
+				@foreach(Article art in ViewBag.Articles)
+				{
+					<article>
+						<div class="content">
+							<h4><a href="/article/index?blockId=@ViewBag.Block.Id&articleId=@art.Id">@art.ArticleName</a></h4>
+						</div>
+					</article>
+				}
+
+			</div>
+		</section>
+		<section>
+			<ul class="actions">
+				<li><a href="/author/deleteauthor?authorId=@Model.Id&blockId=@ViewBag.Block.Id&articleId=@ViewBag.Article.Id">Удалить</a></li>
+			</ul>
+		</section>
+	</div>
+</div>
+
+<!-- Sidebar -->
+<div id="sidebar">
+	<div class="inner">
+
+		<!-- Menu -->
+		<nav id="menu">
+			<header class="major">
+				<h2>Меню</h2>
+			</header>
+			<ul>
+				<li>
+					<a href="/board/updboard?Id=@ViewBag.Board.Id&BoardName=@ViewBag.Board.BoardName&BoardThematics=@ViewBag.Board.BoardThematics">Редактировать доску</a>
+				</li>
+				<li>
+					<span class="opener">Блоки</span>
+					<ul>
+						@foreach (Block block in @ViewBag.Board.Blocks)
+						{
+							<li>
+								<a href="/block/index?id=@Html.DisplayFor(modelItem => block.Id)">
+									@Html.DisplayFor(modelItem => block.BlockName)
+								</a>
+							</li>
+						}
+						<li><a href="/block/addblock?boardId=@ViewBag.Board.Id.ToString()"><strong>Добавить блок</strong></a></li>
+					</ul>
+				</li>
+				<li><a href="/board/deleteboard?boardId=@ViewBag.Board.Id">Удалить доску</a></li>
+			</ul>
+		</nav>
+
+		<!-- Section -->
+		<section>
+			<header class="major">
+				<h2>Контакты</h2>
+			</header>
+			<p>Кафедра основана в 1997 году на факультете Информационных систем и технологий.</p>
+			<ul class="contact">
+				<li class="icon solid fa-envelope"><a href="#">jng@ulstu.ru</a></li>
+				<li class="icon solid fa-phone">(8422) 77-80-79</li>
+				<li class="icon solid fa-home">
+					432027, г. Ульяновск, <br />
+					ул. Северный Венец, 32, <br />
+					3 учебный корпус, ауд.422
+				</li>
+			</ul>
+		</section>
+
+		<!-- Footer -->
+		<footer id="footer">
+			<p class="copyright">&copy; 2024 – Кафедра "Информационные системы"</p>
+		</footer>
+
+	</div>
+</div>

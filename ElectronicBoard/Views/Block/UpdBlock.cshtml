@@ -1,0 +1,56 @@
+﻿@model Block
+@{
+	ViewData["Title"] = "Upd Block Page";
+}
+
+<div id="main">
+	<div class="inner">
+		<section>
+
+			<!-- Form -->
+			<h3>Редактирование блока</h3>
+			<form method="post">
+				<div class="row gtr-uniform">
+					<!-- Id блока и доски -->
+					<div class="col-12">
+						<input type="hidden" name="id" id="id" value=@Model.Id.ToString() placeholder="id" />
+					</div>
+					<div class="col-12">
+						<input type="hidden" name="boardId" id="boardId" value=@Model.BoardId.ToString() placeholder="boardId" />
+					</div>
+					<!-- Название -->
+					<div class="col-12">
+						@if (Model.BlockName.Contains("Мероприятия") || Model.BlockName.Contains("Гранты")
+							|| Model.BlockName.Contains("Участники") || Model.BlockName.Contains("Проекты"))
+						{
+							<input readonly type="text" name="name" id="demo-name" value="@Model.BlockName" placeholder="Название" />
+
+						}
+						else
+						{
+							<input type="text" name="name" id="demo-name" value="@Model.BlockName" placeholder="Название" />
+						}
+					</div>
+					<!-- Отображать в доске при открытии/скрывать -->
+					<div class="col-12">
+						@if (Model.VisibilityOpening)
+						{
+							<input type="checkbox" id="demo-copy" name="copy" checked>
+						}
+						else
+						{
+							<input type="checkbox" id="demo-copy" name="copy">
+						}
+						<label for="demo-copy">Отображать на доске при открытии</label>
+					</div>
+					<div class="col-12">
+						<ul class="actions">
+							<li><input type="submit" value="Сохранить" class="primary" /></li>
+							<li><a href="javascript: history.go(-1)" class="button">Отмена</a></li>
+						</ul>
+					</div>
+				</div>
+			</form>
+		</section>
+	</div>
+</div>

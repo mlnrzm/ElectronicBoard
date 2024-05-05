@@ -1,0 +1,70 @@
+﻿@model Participant
+@{
+	ViewData["Title"] = "Participant Page";
+}
+
+<!-- Main -->
+<div id="main">
+	<div class="inner">
+
+		<!-- Banner -->
+		<section id="banner">
+			<div class="content">
+				<header>
+					<h1>
+						@Model.ParticipantFIO
+					</h1>
+					<p>Область научных интересов: @Model.ScientificInterests</p>
+					<p>Выполняемые задачи: @Model.ParticipantTasks</p>
+					<p>Рейтинг: @Model.ParticipantRating</p>
+					<ul class="actions">
+						<li><a href="/participant/updraiting?partId=@Model.Id" class="button">Обновить</a></li>
+						<li><a href="/participant/updprofile?Id=@Model.Id" class="button">Редактировать</a></li>
+					</ul>
+				</header>
+			</div>
+			<div>
+				<span class="image object">
+					<img src="@ViewBag.Picture" alt="" />
+				</span>
+			</div>
+		</section>
+
+		<!-- Издания -->
+		<section>
+			<header class="major">
+				<h2>Публикации</h2>
+			</header>
+			<div class="content">
+				<p>@Model.ParticipantPublications</p>
+			</div>
+		</section>
+
+		<!-- Статьи -->
+		<section>
+			<header class="major">
+				<h2>Cтатьи</h2>
+			</header>
+			<div class="features">
+				@foreach (Article art in @ViewBag.Articles)
+				{
+					<article>
+						<div class="content">
+							<h4><a>@Html.DisplayFor(modelItem => art.ArticleName)</a></h4>
+						</div>
+					</article>
+				}
+			</div>
+		</section>
+
+		<!-- Патенты -->
+		<section>
+			<header class="major">
+				<h2>Патенты</h2>
+			</header>
+			<div class="content">
+				<p>@Model.ParticipantPatents</p>
+			</div>
+		</section>
+	</div>
+</div>

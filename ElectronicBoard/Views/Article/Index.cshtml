@@ -1,0 +1,170 @@
+﻿@model Article
+@{
+	ViewData["Title"] = "Article Page";
+}
+
+<!-- Main -->
+<div id="main">
+	<div class="inner">
+
+		<!-- Banner -->
+		<section id="banner">
+			<div class="content">
+				<header>
+					<h1>
+						@Model.ArticleName
+					</h1>
+					<p>Мероприятие: @ViewBag.Event.EventName</p>
+				</header>
+				<p>Ключевые слова: @Model.ArticleKeyWords</p>
+				<p>Статус: @Model.ArticleStatus</p>
+				<p>Описание: @Model.ArticleText</p>
+				<p>Место издания: @Model.ArticlePlaceOfPublication</p>
+				<ul class="actions">
+					<li><a href="/article/updarticle?id=@Model.Id&blockId=@ViewBag.Block.Id&eventId=@Model.EventId" class="button big">Редактировать</a></li>
+				</ul>
+			</div>
+			<div>
+				<span class="image object">
+					<img src="@ViewBag.Picture" alt="" />
+				</span>
+			</div>
+		</section>
+
+		<!-- Аннотация -->
+		<section>
+			<header class="major">
+				<h2>Аннотация</h2>
+			</header>
+			<div class="content">
+				<p>@Model.ArticleAnnotation</p>
+			</div>
+		</section>
+
+		<!-- Авторы -->
+		<section>
+			<header class="major">
+				<h2>Авторы</h2>
+			</header>
+			<div class="features">
+				@foreach (Author au in @ViewBag.Authors)
+				{
+					<article>
+						<div class="content">
+							<h4><a href="/author/index?blockId=@ViewBag.Block.Id&authorId=@au.Id&articleId=@Model.Id">@au.AuthorFIO</a></h4>
+							<a href="/author/deleteauthorarticle?authorId=@au.Id&blockId=@ViewBag.Block.Id&articleId=@Model.Id">Удалить</a>
+						</div>
+					</article>
+				}
+			</div>
+			<ul class="actions">
+				<li><a href="/author/addauthor?blockId=@ViewBag.Block.Id&articleId=@Model.Id" class="button">Добавить автора</a></li>
+			</ul>
+		</section>
+
+		<!-- Агрегаторы -->
+		<section>
+			<header class="major">
+				<h2>Агрегаторы</h2>
+			</header>
+			<div class="features">
+				@foreach (Aggregator aggr in @ViewBag.Aggregators)
+				{
+					<article>
+						<div class="content">
+							<h4><a>@Html.DisplayFor(modelItem => aggr.AggregatorName)</a></h4>
+							<a href="/article/deleteaggregatorarticle?blockId=@ViewBag.Block.Id&articleId=@Model.Id&aggregatorId=@aggr.Id">Удалить из статьи</a><br />
+							<a href="/article/deleteaggregator?blockId=@ViewBag.Block.Id&articleId=@Model.Id&aggregatorId=@aggr.Id">Удалить</a>
+						</div>
+					</article>
+				}
+			</div>
+			<ul class="actions">
+				<li><a href="/article/addaggregator?blockId=@ViewBag.Block.Id&articleId=@Model.Id" class="button">Добавить агрегатора</a></li>
+			</ul>
+		</section>
+
+		<!-- Файлы -->
+		<section>
+			<header class="major">
+				<h2>Файлы</h2>
+			</header>
+			<div class="features">
+				@foreach (File file in @ViewBag.Files)
+				{
+					<article>
+						<div class="content">
+							<h4><a href="/file/openfile?blockId=@ViewBag.Block.Id&Id=@file.Id" download="@Html.DisplayFor(modelItem => file.FileName)">@Html.DisplayFor(modelItem => file.FileName)</a></h4>
+							<a href="/file/deletefile?blockId=@ViewBag.Block.Id&Id=@file.Id">Удалить</a>
+						</div>
+					</article>
+				}
+			</div>
+			<ul class="actions">
+				<li><a href="/file/addfile?blockId=@ViewBag.Block.Id&projectId=&elementId=&eventId=&partId=&grantId=&stageId=&articleId=@Model.Id" class="button">Загрузить файл</a></li>
+			</ul>
+		</section>
+		<section>
+			<ul class="actions">
+				<li><a href="/article/deletearticle?id=@Model.Id&blockId=@ViewBag.Block.Id&eventId=@Model.EventId">Удалить</a></li>
+			</ul>
+		</section>
+
+	</div>
+</div>
+
+<!-- Sidebar -->
+<div id="sidebar">
+	<div class="inner">
+
+		<!-- Menu -->
+		<nav id="menu">
+			<header class="major">
+				<h2>Меню</h2>
+			</header>
+			<ul>
+				<li>
+					<a href="/board/updboard?Id=@ViewBag.Board.Id&BoardName=@ViewBag.Board.BoardName&BoardThematics=@ViewBag.Board.BoardThematics">Редактировать доску</a>
+				</li>
+				<li>
+					<span class="opener">Блоки</span>
+					<ul>
+						@foreach (Block block in @ViewBag.Board.Blocks)
+						{
+							<li>
+								<a href="/block/index?id=@Html.DisplayFor(modelItem => block.Id)">
+									@Html.DisplayFor(modelItem => block.BlockName)
+								</a>
+							</li>
+						}
+						<li><a href="/block/addblock?boardId=@ViewBag.Board.Id.ToString()"><strong>Добавить блок</strong></a></li>
+					</ul>
+				</li>
+				<li><a href="/board/deleteboard?boardId=@ViewBag.Board.Id">Удалить доску</a></li>
+			</ul>
+		</nav>
+
+		<!-- Section -->
+		<section>
+			<header class="major">
+				<h2>Контакты</h2>
+			</header>
+			<p>Кафедра основана в 1997 году на факультете Информационных систем и технологий.</p>
+			<ul class="contact">
+				<li class="icon solid fa-envelope"><a href="#">jng@ulstu.ru</a></li>
+				<li class="icon solid fa-phone">(8422) 77-80-79</li>
+				<li class="icon solid fa-home">
+					432027, г. Ульяновск, <br />
+					ул. Северный Венец, 32, <br />
+					3 учебный корпус, ауд.422
+				</li>
+			</ul>
+		</section>
+
+		<!-- Footer -->
+		<footer id="footer">
+			<p class="copyright">&copy; 2024 – Кафедра "Информационные системы"</p>
+		</footer>
+
+	</div>
+</div>

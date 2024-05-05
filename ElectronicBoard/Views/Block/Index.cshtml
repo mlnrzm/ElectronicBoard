@@ -1,0 +1,194 @@
+﻿@model Block
+@{
+	ViewData["Title"] = "Block Page";
+}
+<!-- Main -->
+<div id="main">
+	<div class="inner">
+
+		<!-- Content -->
+		<section>
+			<header class="main">
+				<h1>@Model.BlockName</h1>
+			</header>
+
+			<!-- Content -->
+			<p>Доска: @ViewBag.Board.BoardName</p>
+			<ul class="actions">
+				<li><a href="/block/updblock?Id=@Model.Id&BoardId=@Model.BoardId&BlockName=@Model.BlockName" class="button">Редактировать</a></li>
+			</ul>
+		</section>
+
+		<!-- Section -->
+		<section>
+			<header class="major">
+				<h2>Элементы блока</h2>
+			</header>
+
+				<!-- Участники -->
+				@if (@ViewBag.Participants != null)
+				{
+					<div class="features">
+					@foreach (Participant item in (@ViewBag.Participants))
+					{
+						<article>
+							<div class="content">
+								<h3><a href="/participant/index?partId=@item.Id&blockId=@Model.Id">@item.ParticipantFIO</a></h3>
+							</div>
+						</article>
+					}
+					</div>
+					<ul class="actions">
+					<li><a href="/participant/addpartblock?blockId=@Model.Id" class="button">Добавить</a></li>
+					</ul>
+				}
+				<!-- Мероприятия -->
+				@if (@ViewBag.Events != null)
+				{
+					<div class="features">
+					@foreach (Event item in (@ViewBag.Events))
+					{
+						<article>
+							<div class="content">
+								<!-- Подсветка за 3 дня до наступления даты -->
+								@if (ViewBag.DateNow < item.EventDateFinish && (item.EventDateFinish - ViewBag.DateNow).Days < 4)
+								{
+									<h3><a href="/event/index?eventId=@item.Id&blockId=@Model.Id" style="background:@item.EventFinishColor">@item.EventName</a></h3>
+
+								}
+								else if (ViewBag.DateNow < item.EventDateFinishArticle && (item.EventDateFinishArticle - ViewBag.DateNow).Days < 4)
+								{
+									<h3><a href="/event/index?eventId=@item.Id&blockId=@Model.Id" style="background:@item.EventFinishArticleColor">@item.EventName</a></h3>
+
+								}
+								else if (ViewBag.DateNow < item.EventDateStart && (item.EventDateStart - ViewBag.DateNow).Days < 4)
+								{
+									<h3><a href="/event/index?eventId=@item.Id&blockId=@Model.Id" style="background: @item.EventStartColor">@item.EventName</a></h3>
+								}
+								else
+								{
+									<h3><a href="/event/index?eventId=@item.Id&blockId=@Model.Id">@item.EventName</a></h3>
+
+								}
+							</div>
+						</article>
+					}
+					</div>
+					<ul class="actions">
+					<li><a href="/event/addevent?blockId=@Model.Id" class="button">Добавить</a></li>
+					</ul>
+				}
+				<!-- Гранты -->
+				@if (@ViewBag.Grants != null)
+				{
+					<div class="features">
+					@foreach (Grant item in (@ViewBag.Grants))
+					{
+						<article>
+							<div class="content">
+								<h3><a href="/grant/index?Id=@item.Id&BlockId=@item.BlockId">@item.GrantName</a></h3>
+							</div>
+						</article>
+					}
+				</div>
+				<ul class="actions">
+					<li><a href="/grant/addgrant?blockId=@Model.Id" class="button">Добавить</a></li>
+				</ul>
+				}
+				<!-- Проекты -->
+				@if (@ViewBag.Projects != null)
+				{
+					<div class="features">
+					@foreach (Project item in (@ViewBag.Projects))
+					{
+						<article>
+							<div class="content">
+								<h3><a href="/project/index?Id=@item.Id&ProjectName=@item.ProjectName">@item.ProjectName</a></h3>
+							</div>
+						</article>
+					}
+				</div>
+				<ul class="actions">
+					<li><a href="/project/addproject?blockId=@Model.Id" class="button">Добавить</a></li>
+				</ul>
+				}
+				<!-- Простые элементы -->
+				@if (@ViewBag.Elements != null)
+				{
+					<div class="features">
+					@foreach (SimpleElement item in (@ViewBag.Elements))
+					{
+						<article>
+							<div class="content">
+								<h3><a href="/element/index?Id=@item.Id&SimpleElementName=@item.SimpleElementName">@item.SimpleElementName</a></h3>
+							</div>
+						</article>
+					}
+				</div>
+				<ul class="actions">
+					<li><a href="/element/addelement?blockId=@Model.Id" class="button">Добавить</a></li>
+				</ul>
+				}
+
+		</section>
+		<ul class="actions">
+			<li><a href="/block/deleteblock?blockId=@Model.Id&boardId=@ViewBag.Board.Id">Удалить блок</a></li>
+		</ul>
+	</div>
+</div>
+
+<!-- Sidebar -->
+<div id="sidebar">
+	<div class="inner">
+
+		<!-- Menu -->
+		<nav id="menu">
+			<header class="major">
+				<h2>Меню</h2>
+			</header>
+			<ul>
+				<li>
+					<a href="/board/updboard?Id=@ViewBag.Board.Id&BoardName=@ViewBag.Board.BoardName&BoardThematics=@ViewBag.Board.BoardThematics">Редактировать доску</a>
+				</li>
+				<li>
+					<span class="opener">Блоки</span>
+					<ul>
+						@foreach (Block block in @ViewBag.Board.Blocks)
+						{
+							<li>
+								<a href="/block/index?id=@Html.DisplayFor(modelItem => block.Id)">
+									@Html.DisplayFor(modelItem => block.BlockName)
+								</a>
+							</li>
+						}
+						<li><a href="/block/addblock?boardId=@Model.BoardId.ToString()"><strong>Добавить блок</strong></a></li>
+					</ul>
+				</li>
+				<li><a href="/board/deleteboard?boardId=@ViewBag.Board.Id">Удалить доску</a></li>
+			</ul>
+		</nav>
+
+		<!-- Section -->
+		<section>
+			<header class="major">
+				<h2>Контакты</h2>
+			</header>
+			<p>Кафедра основана в 1997 году на факультете Информационных систем и технологий.</p>
+			<ul class="contact">
+				<li class="icon solid fa-envelope"><a href="#">jng@ulstu.ru</a></li>
+				<li class="icon solid fa-phone">(8422) 77-80-79</li>
+				<li class="icon solid fa-home">
+					432027, г. Ульяновск, <br />
+					ул. Северный Венец, 32, <br />
+					3 учебный корпус, ауд.422
+				</li>
+			</ul>
+		</section>
+
+		<!-- Footer -->
+		<footer id="footer">
+			<p class="copyright">&copy; 2024 – Кафедра "Информационные системы"</p>
+		</footer>
+
+	</div>
+</div>
