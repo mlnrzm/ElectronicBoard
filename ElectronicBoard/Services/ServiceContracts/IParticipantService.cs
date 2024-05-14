@@ -25,5 +25,6 @@ namespace ElectronicBoard.Services.ServiceContracts
 		public Task Delete(Participant model);
 		// Удаление участника
 		public Task UpdRaiting(int partId);
+		public Task CreateTestParticipant(Participant participant);
 	}
 }

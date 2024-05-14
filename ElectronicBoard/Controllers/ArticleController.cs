@@ -2,15 +2,23 @@
 using ElectronicBoard.Models;
 using ElectronicBoard.Services.ServiceContracts;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using System.Globalization;
 using File = ElectronicBoard.Models.File;
 
 namespace ElectronicBoard.Controllers
 {
+	[Authorize]
 	public class ArticleController : Controller
 	{
 		private readonly ILogger<ArticleController> _logger;
 		private readonly INotyfService _notyf;
+		private readonly IdnMapping idn;
+
+		private readonly UserManager<IdentityUser<int>> _userManager;
+		private readonly IParticipantService participantService;
 
 		private readonly IEventService eventService;
 		private readonly IArticleService articleService;
@@ -24,7 +32,8 @@ namespace ElectronicBoard.Controllers
 
 		public ArticleController(ILogger<ArticleController> logger, INotyfService notyf, 
 			IEventService _eventService, IArticleService _articleService, IAuthorService _authorService, 
-			IBlockService _blockService, IBoardService _boardService, IAggregatorService _aggregatorService, IFileService _fileService)
+			IBlockService _blockService, IBoardService _boardService, IAggregatorService _aggregatorService, IFileService _fileService,
+			UserManager<IdentityUser<int>> userManager, IParticipantService _participantService)
 		{
 			_logger = logger;
 			_notyf = notyf;
@@ -35,83 +44,123 @@ namespace ElectronicBoard.Controllers
 			aggregatorService = _aggregatorService;
 			authorService = _authorService;
 			fileService = _fileService;
+			idn = new IdnMapping();
+			_userManager = userManager;
+			participantService = _participantService;
 		}
 
 		// Отображение страницы с информацией о статье
 		public async Task<IActionResult> Index(string blockId, string articleId)
 		{
-			int ArticleId = Convert.ToInt32(articleId);
-			int BlockId = Convert.ToInt32(blockId);
+			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+			ViewBag.ActivePart = activeUser;
 
-			Article find_article = await articleService.GetElement(new Article { Id = ArticleId });
+			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+			ViewBag.ActiveBoards = activeBoards;
 
-			// Конвертация изображения
-			if (find_article.Picture.Length > 0)
+			try
 			{
-				ViewBag.Picture = "data:image/jpg;base64," + Convert.ToBase64String(find_article.Picture);
+				int ArticleId = Convert.ToInt32(articleId);
+				int BlockId = Convert.ToInt32(blockId);
+
+				Article find_article = await articleService.GetElement(new Article { Id = ArticleId });
+
+				// Конвертация изображения
+				if (find_article.Picture.Length > 0)
+				{
+					ViewBag.Picture = "data:image/jpg;base64," + Convert.ToBase64String(find_article.Picture);
+				}
+
+				// Агрегаторы статьи
+				List<Aggregator> aggregators = await aggregatorService.GetFilteredList(find_article.Id);
+				ViewBag.Aggregators = aggregators;
+
+				// Авторы статьи
+				List<Author> authors = await authorService.GetFilteredList(find_article.Id);
+				ViewBag.Authors = authors;
+
+				// Файлы статьи
+				List<File> files = await fileService.GetFilteredList("article", ArticleId);
+				ViewBag.Files = files;
+
+				// Мероприятие, в котором находится статья
+				Event find_event = await eventService.GetElement(new Event { Id = find_article.EventId });
+				ViewBag.Event = find_event;
+
+				// Блок, на котором находится элемент
+				Block find_block = await blockService.GetElement(new Block { Id = BlockId });
+				ViewBag.Block = find_block;
+
+				// Доска, на которой находится блок
+				Board board = await boardService.GetElement(new Board { Id = find_block.BoardId });
+				List<Block> added_blocks = new List<Block>();
+				foreach (var b in await blockService.GetFilteredList(new Block { BoardId = board.Id })) { added_blocks.Add(b); }
+				ViewBag.Board = new Board
+				{
+					Id = board.Id,
+					BoardName = board.BoardName,
+					BoardThematics = board.BoardThematics,
+					Blocks = added_blocks
+				};
+				return View(find_article);
 			}
-
-			// Агрегаторы статьи
-			List<Aggregator> aggregators = await aggregatorService.GetFilteredList(find_article.Id);
-			ViewBag.Aggregators = aggregators;
-
-			// Авторы статьи
-			List<Author> authors = await authorService.GetFilteredList(find_article.Id);
-			ViewBag.Authors = authors;
-
-			// Файлы статьи
-			List<File> files = await fileService.GetFilteredList("article", ArticleId);
-			ViewBag.Files = files;			
-
-			// Мероприятие, в котором находится статья
-			Event find_event = await eventService.GetElement(new Event { Id = find_article.EventId });
-			ViewBag.Event = find_event;
-
-			// Блок, на котором находится элемент
-			Block find_block = await blockService.GetElement(new Block { Id = BlockId });
-			ViewBag.Block = find_block;
-
-			// Доска, на которой находится блок
-			Board board = await boardService.GetElement(new Board { Id = find_block.BoardId });
-			List<Block> added_blocks = new List<Block>();
-			foreach (var b in await blockService.GetFilteredList(new Block { BoardId = board.Id })) { added_blocks.Add(b); }
-			ViewBag.Board = new Board
+			catch (Exception ex) 
 			{
-				Id = board.Id,
-				BoardName = board.BoardName,
-				BoardThematics = board.BoardThematics,
-				Blocks = added_blocks
-			};
-
-			return View(find_article);
+				_notyf.Error(ex.Message);
+				return Redirect("javascript: history.go(-1)");
+			}
 		}
 
 		// Добавление/создание статьи
 		[HttpGet]
-		public IActionResult AddArticle(string blockId, string eventId)
+		public async Task<IActionResult> AddArticle(string blockId, string eventId)
 		{
-			// Передача id блока, на котором будет находиться мероприятие со статьёй
-			ViewData["blockId"] = blockId;
+			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+			ViewBag.ActivePart = activeUser;
 
-			// Передача id мероприятия, на котором будет находиться статья
-			ViewData["eventId"] = eventId;
+			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+			ViewBag.ActiveBoards = activeBoards;
 
-			return View();
+			try
+			{
+				var block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				var _event = await eventService.GetElement(new Event { Id = Convert.ToInt32(eventId) });
+
+				if (block != null && _event != null)
+				{
+					// Передача id блока, на котором будет находиться мероприятие со статьёй
+					ViewData["blockId"] = blockId;
+					// Передача id мероприятия, на котором будет находиться статья
+					ViewData["eventId"] = eventId;
+				}
+				else 
+				{
+					throw new Exception("Ошибка");
+				}
+				return View();
+			}
+			catch(Exception ex) 
+			{
+				_notyf.Error(ex.Message);
+				return Redirect("javascript: history.go(-1)");
+			}
 		}
 		[HttpPost]
 		public async Task AddArticle(string blockId, string eventId, 
 			string name, string text, string place, string words, string annotation, string category,
 			IFormFile pict)
 		{
-			if (!string.IsNullOrEmpty(blockId) && !string.IsNullOrEmpty(eventId) 
+			var block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+			var _event = await eventService.GetElement(new Event { Id = Convert.ToInt32(eventId) });
+
+			if (block != null && _event != null 
 				&& !string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(text) 
 				&& !string.IsNullOrEmpty(place) && !string.IsNullOrEmpty(words) && !string.IsNullOrEmpty(annotation) && !string.IsNullOrEmpty(category) )
 			{
 				try
 				{
-					int BlockId = Convert.ToInt32(blockId);
-					int EventId = Convert.ToInt32(eventId);
-
 					// Изображение
 					byte[] picture = new byte[] { };
 					if (pict != null)
@@ -151,7 +200,7 @@ namespace ElectronicBoard.Controllers
 
 					// Добавление и отображение статьи
 					await articleService.Insert(new Article { ArticleName = name, ArticleText = text, ArticlePlaceOfPublication = place, ArticleKeyWords = words, 
-						ArticleStatus = status, ArticleAnnotation = annotation, EventId = EventId, Picture = new byte[] { } });
+						ArticleStatus = status, ArticleAnnotation = annotation, EventId = _event.Id, Picture = new byte[] { } });
 					Article new_article = await articleService.GetElement(new Article
 					{
 						ArticleName = name,
@@ -160,25 +209,25 @@ namespace ElectronicBoard.Controllers
 						ArticleKeyWords = words,
 						ArticleStatus = status,
 						ArticleAnnotation = annotation,
-						EventId = EventId,
+						EventId = _event.Id,
 						Picture = picture
 					});
 
 					Response.Redirect($"/article/index?" +
-						$"blockId={BlockId}" +
+						$"blockId={block.Id}" +
 						$"&articleId={new_article.Id}");
 				}
 				catch (Exception ex)
 				{
 					_notyf.Error(ex.Message);
-					Response.Redirect($"/article/addarticle?blockId=" + blockId + "&eventId=" + eventId);
+					Response.Redirect($"/article/addarticle?blockId=" + idn.GetAscii(blockId) + "&eventId=" + idn.GetAscii(eventId));
 				}
 				
 			}
 			else
 			{
 				_notyf.Error("Заполните все поля");
-				Response.Redirect($"/article/addarticle?blockId=" + blockId + "&eventId=" + eventId);
+				Response.Redirect($"/article/addarticle?blockId=" + idn.GetAscii(blockId) + "&eventId=" + idn.GetAscii(eventId));
 			}
 		}
 
@@ -186,24 +235,49 @@ namespace ElectronicBoard.Controllers
 		[HttpGet]
 		public async Task<IActionResult> UpdArticle(string id, string blockId, string eventId)
 		{
-			// Передача id статьи
-			int art_id = Convert.ToInt32(id);
-			Article this_art = await articleService.GetElement(new Article { Id = art_id });
+			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+			ViewBag.ActivePart = activeUser;
 
-			// Передача id блока, на котором будет находиться мероприятие со статьёй
-			ViewData["blockId"] = blockId;
+			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+			ViewBag.ActiveBoards = activeBoards;
 
-			// Передача id мероприятия, на котором будет находиться статья
-			ViewData["eventId"] = eventId;
+			try
+			{
+				// Передача id статьи
+				Article this_art = await articleService.GetElement(new Article { Id = Convert.ToInt32(id) });
+				var block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				var _event = await eventService.GetElement(new Event { Id = Convert.ToInt32(eventId) });
 
-			return View(this_art);
+				if (block != null && _event != null && this_art != null)
+				{
+					// Передача id блока, на котором будет находиться мероприятие со статьёй
+					ViewData["blockId"] = blockId;
+					// Передача id мероприятия, на котором будет находиться статья
+					ViewData["eventId"] = eventId;
+				}
+				else
+				{
+					throw new Exception("Статья не найдена");
+				}
+				return View(this_art);
+			}
+			catch (Exception ex)
+			{
+				_notyf.Error(ex.Message);
+				return Redirect("javascript: history.go(-1)");
+			}
 		}
 		[HttpPost]
 		public async Task UpdArticle(string id, string blockId, string eventId, 
 			string name, string text, string place, 
 			string words, string annotation, string category, IFormFile pict, string delpic)
 		{
-			if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(blockId) && !string.IsNullOrEmpty(eventId) && 
+			var block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+			var _event = await eventService.GetElement(new Event { Id = Convert.ToInt32(eventId) });
+			var art = await articleService.GetElement(new Article { Id = Convert.ToInt32(id) });
+
+			if (block != null && _event != null && art != null &&
 				!string.IsNullOrEmpty(place) && !string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(text) &&
 				!string.IsNullOrEmpty(words) && !string.IsNullOrEmpty(annotation) && !string.IsNullOrEmpty(category))
 			{
@@ -296,87 +370,101 @@ namespace ElectronicBoard.Controllers
 				catch (Exception ex)
 				{
 					_notyf.Error(ex.Message);
-					Response.Redirect($"/article/updarticle?id=" + id + "&blockId=" + blockId + "&eventId=" + eventId);
+					Response.Redirect($"/article/updarticle?id=" + idn.GetAscii(id.ToString()) + "&blockId=" + idn.GetAscii(blockId.ToString()) + "&eventId=" + idn.GetAscii(eventId));
 				}
 			}
 			else
 			{
 				_notyf.Error("Заполните все поля");
-				Response.Redirect($"/article/updarticle?id=" + id + "&blockId=" + blockId + "&eventId=" + eventId);
+				Response.Redirect($"/article/updarticle?id=" + idn.GetAscii(id) + "&blockId=" + idn.GetAscii(blockId) + "&eventId=" + idn.GetAscii(eventId));
 			}
 		}
 
 		// Удаление статьи
 		[HttpGet]
-		public void DeleteArticle(string id, string blockId, string eventId)
+		public async Task DeleteArticle(string id, string blockId, string eventId)
 		{
 			if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(eventId) && !string.IsNullOrEmpty(blockId))
 			{
-				int _id;
-				int block_id;
-				int event_id;
+				var block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				var _event = await eventService.GetElement(new Event { Id = Convert.ToInt32(eventId) });
+				var art = await articleService.GetElement(new Article { Id = Convert.ToInt32(id) });
 
-				bool isNumeric_Id = int.TryParse(id, out _id);
-				bool isNumeric_blockId = int.TryParse(blockId, out block_id);
-				bool isNumeric_eventId = int.TryParse(eventId, out event_id);
-
-				if (isNumeric_blockId && isNumeric_Id && isNumeric_eventId)
+				if (block != null && _event != null && art != null)
 				{
 					try
 					{
-						articleService.Delete(new Article { Id = _id });
-						Response.Redirect($"/event/index?eventId={eventId}&blockId={blockId}");
+						await articleService.Delete(new Article { Id = art.Id });
+						Response.Redirect($"/event/index?eventId={idn.GetAscii(eventId)}&blockId={idn.GetAscii(blockId)}");
 					}
 					catch (Exception ex)
 					{
 						_notyf.Error(ex.Message);
 						Response.Redirect($"/article/index?" +
-							$"blockId={blockId}" +
-							$"&articleId={id}" +
-							$"&eventId={eventId}");
+							$"blockId={idn.GetAscii(blockId)}" +
+							$"&articleId={idn.GetAscii(id)}" +
+							$"&eventId={idn.GetAscii(eventId)}");
 					}
 				}
 				else
 				{
 					_notyf.Error("Статья не найдена");
 					Response.Redirect($"/article/index?" +
-						$"blockId={blockId}" +
-						$"&articleId={id}" +
-						$"&eventId={eventId}");
+						$"blockId={idn.GetAscii(blockId)}" +
+						$"&articleId={idn.GetAscii(id)}" +
+						$"&eventId={idn.GetAscii(eventId)}");
 				}
 			}
 		}
 		
 		// АГРЕГАТОРЫ СТАТЬИ //
-
 		// Добавление существующего агрегатора
 		[HttpGet]
 		public async Task<IActionResult> AddAggregator(string articleId, string blockId)
 		{
+			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+			ViewBag.ActivePart = activeUser;
+
+			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+			ViewBag.ActiveBoards = activeBoards;
+
+
 			int ArticleId = Convert.ToInt32(articleId);
 			int BlockId = Convert.ToInt32(blockId);
 
-			// Передача id статьи и блока
-			ViewData["articleId"] = ArticleId;
-			ViewData["blockId"] = BlockId;
+			var block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+			var art = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
 
-			// Передача агрегаторов, которых можно добавить к статье
-			List<Aggregator> all_aggs = await aggregatorService.GetFullList();
-			List<Aggregator> article_aggs = await aggregatorService.GetFilteredList(ArticleId);
-
-			List<Aggregator> aggs_for_adds = new List<Aggregator>();
-			foreach (var agg in all_aggs)
+			if (block != null && art != null)
 			{
-				bool add = true;
-				foreach (var art_agg in article_aggs)
-				{
-					if (agg.Id == art_agg.Id) add = false;
-				}
-				if (add) { aggs_for_adds.Add(agg); }
-			}
-			ViewBag.Aggregators = aggs_for_adds;
+				// Передача id статьи и блока
+				ViewData["articleId"] = art.Id;
+				ViewData["blockId"] = block.Id;
 
-			return View();
+				// Передача агрегаторов, которых можно добавить к статье
+				List<Aggregator> all_aggs = await aggregatorService.GetFullList();
+				List<Aggregator> article_aggs = await aggregatorService.GetFilteredList(ArticleId);
+
+				List<Aggregator> aggs_for_adds = new List<Aggregator>();
+				foreach (var agg in all_aggs)
+				{
+					bool add = true;
+					foreach (var art_agg in article_aggs)
+					{
+						if (agg.Id == art_agg.Id) add = false;
+					}
+					if (add) { aggs_for_adds.Add(agg); }
+				}
+				ViewBag.Aggregators = aggs_for_adds;
+
+				return View();
+			}
+			else 
+			{
+				_notyf.Error("Статья не найдена");
+				return Redirect("javascript: history.go(-1)");
+			}
 		}
 		[HttpPost]
 		public async Task AddAggregator(string blockId, string articleId, string aggregatorId)
@@ -390,27 +478,27 @@ namespace ElectronicBoard.Controllers
 			Article find_article = await articleService.GetElement(new Article { Id = ArticleId });
 			Event find_event = await eventService.GetElement(new Event { Id = find_article.EventId });
 
-			if (find_aggregator != null && find_article != null)
+			if (find_aggregator != null && find_article != null && find_event != null)
 			{
 				try
 				{
 					await articleService.GetAggregator(find_aggregator, find_article.Id);
-					Response.Redirect($"/article/index?blockId=" + BlockId + "&eventId=" + find_event.Id + "&articleId=" + find_article.Id);
+					Response.Redirect($"/article/index?blockId=" + idn.GetAscii(BlockId.ToString()) + "&eventId=" + idn.GetAscii(find_event.Id.ToString()) + "&articleId=" + idn.GetAscii(find_article.Id.ToString()));
 				}
 				catch (Exception ex)
 				{
 					_notyf.Error(ex.Message);
 					Response.Redirect($"/article/addaggregator?" +
-						$"blockId=" + blockId 
-						+ "&articleId=" + articleId);
+						$"blockId=" + idn.GetAscii(blockId) 
+						+ "&articleId=" + idn.GetAscii(articleId));
 				}
 			}
 			else
 			{
 				_notyf.Error("Выберите агрегатора");
 				Response.Redirect($"/article/addaggregator?" +
-					$"blockId=" + blockId
-					+ "&articleId=" + articleId);
+					$"blockId=" + idn.GetAscii(blockId)
+					+ "&articleId=" + idn.GetAscii(articleId));
 			}
 		}
 
@@ -418,38 +506,29 @@ namespace ElectronicBoard.Controllers
 		[HttpGet]
 		public async Task DeleteAggregatorArticle(string blockId, string articleId, string aggregatorId)
 		{
-			if (!string.IsNullOrEmpty(articleId) && !string.IsNullOrEmpty(aggregatorId))
+			if (!string.IsNullOrEmpty(articleId) && !string.IsNullOrEmpty(aggregatorId) && !string.IsNullOrEmpty(blockId))
 			{
-				// найти статью
-				int block_id;
-				int article_id;
-				int aggregator_id;
-				bool isNumeric_blockId = int.TryParse(blockId, out block_id);
-				bool isNumeric_articleId = int.TryParse(articleId, out article_id);
-				bool isNumeric_aggregatorId = int.TryParse(aggregatorId, out aggregator_id);
-				if (isNumeric_articleId && isNumeric_aggregatorId && isNumeric_blockId)
+				Aggregator find_aggregator = await aggregatorService.GetElement(new Aggregator { Id = Convert.ToInt32(aggregatorId) });
+				Article find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
+				Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+
+				if (find_aggregator != null && find_article != null && find_block != null)
 				{
-					Block block = await blockService.GetElement(new Block { Id = block_id });
-					Aggregator agg = await aggregatorService.GetElement(new Aggregator { Id = aggregator_id });
-					Article art = await articleService.GetElement(new Article { Id = article_id });
 					try
 					{
-						if (agg != null && art != null && block != null)
-						{
-							await articleService.GetAggregator(agg, art.Id);
-							Response.Redirect($"/article/index?blockId=" + block_id + "&articleId=" + articleId);
-						}
+						await articleService.GetAggregator(find_aggregator, find_article.Id);
+						Response.Redirect($"/article/index?blockId=" + find_block.Id + "&articleId=" + find_article.Id);
 					}
 					catch (Exception ex)
 					{
 						_notyf.Error(ex.Message);
-						Response.Redirect($"/article/index?blockId=" + block_id + "&articleId=" + articleId);
+						Response.Redirect($"/article/index?blockId=" + find_block.Id + "&articleId=" + find_article.Id);
 					}
 				}
 				else
 				{
 					_notyf.Error("Ошибка");
-					Response.Redirect($"/article/index?blockId=" + block_id + "&articleId=" + articleId);
+					Response.Redirect("javascript: history.go(-1)");
 				}
 			}
 		}
@@ -472,33 +551,47 @@ namespace ElectronicBoard.Controllers
 				try
 				{
 					await aggregatorService.Delete(find_aggregator);
-					Response.Redirect($"/article/index?blockId=" + BlockId + "&eventId=" + find_event.Id + "&articleId=" + find_article.Id);
+					Response.Redirect($"/article/index?blockId=" + idn.GetAscii(BlockId.ToString()) + "&eventId=" + idn.GetAscii(find_event.Id.ToString()) + "&articleId=" + idn.GetAscii(find_article.Id.ToString()));
 				}
 				catch (Exception ex)
 				{
 					_notyf.Error(ex.Message);
-					Response.Redirect($"/article/index?blockId=" + BlockId + "&eventId=" + find_event.Id + "&articleId=" + find_article.Id);
+					Response.Redirect($"/article/index?blockId=" + idn.GetAscii(BlockId.ToString()) + "&eventId=" + idn.GetAscii(find_event.Id.ToString()) + "&articleId=" + idn.GetAscii(find_article.Id.ToString()));
 				}
 			}
 			else
 			{
 				_notyf.Error("Агрегатор не найден");
-				Response.Redirect($"/article/index?blockId=" + BlockId + "&eventId=" + find_event.Id + "&articleId=" + find_article.Id);
+				Response.Redirect($"/article/index?blockId=" + idn.GetAscii(BlockId.ToString()) + "&eventId=" + idn.GetAscii(find_event.Id.ToString()) + "&articleId=" + idn.GetAscii(articleId));
 			}
 		}
 
 		// Добавление нового агрегатора
 		[HttpGet]
-		public IActionResult AddNewAggregator(string articleId, string blockId)
+		public async Task<IActionResult> AddNewAggregator(string articleId, string blockId)
 		{
-			int ArticleId = Convert.ToInt32(articleId);
-			int BlockId = Convert.ToInt32(blockId);
+			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+			ViewBag.ActivePart = activeUser;
 
-			// Передача id статьи и блока
-			ViewData["articleId"] = ArticleId;
-			ViewData["blockId"] = BlockId;
+			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+			ViewBag.ActiveBoards = activeBoards;
 
-			return View();
+			Article find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
+			Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+
+			if (find_article != null && find_block != null)
+			{
+				// Передача id статьи и блока
+				ViewData["articleId"] = find_article.Id;
+				ViewData["blockId"] = find_block.Id;
+				return View();
+			}
+			else 
+			{
+				_notyf.Error("Ошибка");
+				return Redirect("javascript: history.go(-1)");
+			}
 		}
 		[HttpPost]
 		public async Task AddNewAggregator(string blockId, string articleId, string name)
@@ -516,22 +609,22 @@ namespace ElectronicBoard.Controllers
 					await aggregatorService.Insert(new Aggregator { AggregatorName = name });
 					Aggregator new_agg = await aggregatorService.GetElement(new Aggregator { AggregatorName = name });
 					await articleService.GetAggregator(new_agg, find_article.Id);
-					Response.Redirect($"/article/index?blockId=" + BlockId + "&eventId=" + find_event.Id + "&articleId=" + find_article.Id);
+					Response.Redirect($"/article/index?blockId=" + idn.GetAscii(BlockId.ToString()) + "&eventId=" + idn.GetAscii(find_event.Id.ToString()) + "&articleId=" + idn.GetAscii(find_article.Id.ToString()));
 				}
 				catch (Exception ex)
 				{
 					_notyf.Error(ex.Message);
 					Response.Redirect($"/article/addnewaggregator?" +
-						$"blockId=" + blockId
-						+ "&articleId=" + articleId);
+						$"blockId=" + idn.GetAscii(blockId.ToString())
+						+ "&articleId=" + idn.GetAscii(articleId.ToString()));
 				}
 			}
 			else
 			{
 				_notyf.Error("Ошибка");
 				Response.Redirect($"/article/addnewaggregator?" +
-					$"blockId=" + blockId
-					+ "&articleId=" + articleId);
+					$"blockId=" + idn.GetAscii(blockId.ToString())
+					+ "&articleId=" + idn.GetAscii(articleId.ToString()));
 			}
 		}
 	}

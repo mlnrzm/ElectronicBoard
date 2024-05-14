@@ -4,13 +4,22 @@ using File = ElectronicBoard.Models.File;
 using ElectronicBoard.Services.ServiceContracts;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
+using System.Globalization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
+using System.Runtime.CompilerServices;
 
 namespace ElectronicBoard.Controllers
 {
+	[Authorize]
 	public class ElementController : Controller
 	{
 		private readonly ILogger<ElementController> _logger;
+		private readonly IdnMapping idn;
+
+		private readonly UserManager<IdentityUser<int>> _userManager;
+		private readonly IParticipantService participantService;
+
 		private readonly ISimpleElementService elementService;
 		private readonly IStickerService stickerService;
 		private readonly IBoardService boardService;
@@ -20,7 +29,8 @@ namespace ElectronicBoard.Controllers
 
 		public ElementController(ILogger<ElementController> logger, INotyfService notyf, 
 			ISimpleElementService _elementService, IStickerService _stickerService,
-			IBoardService _boardService, IBlockService _blockService, IFileService _fileService)
+			IBoardService _boardService, IBlockService _blockService, IFileService _fileService,
+			UserManager<IdentityUser<int>> userManager, IParticipantService _participantService)
 		{
 			_logger = logger;
 			_notyf = notyf;
@@ -29,52 +39,86 @@ namespace ElectronicBoard.Controllers
 			elementService = _elementService;
 			stickerService = _stickerService;
 			fileService = _fileService;
+			idn = new IdnMapping();
+			participantService = _participantService;
+			_userManager = userManager;
 		}
 
 		// Отображение страницы с информацией об элементе
 		public async Task<IActionResult> Index(SimpleElement simpleElement)
 		{
-			SimpleElement find_element = await elementService.GetElement(new SimpleElement { Id = simpleElement.Id, SimpleElementName = simpleElement.SimpleElementName });
+			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+			ViewBag.ActivePart = activeUser;
 
-			// Конвертация изображения
-			if (find_element.Picture.Length > 0)
+			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+			ViewBag.ActiveBoards = activeBoards;
+
+			SimpleElement find_element = await elementService.GetElement(new SimpleElement { Id = simpleElement.Id, SimpleElementName = idn.GetUnicode(simpleElement.SimpleElementName) });
+
+			if (find_element != null)
 			{
-				ViewBag.Picture = "data:image/jpg;base64," + Convert.ToBase64String(find_element.Picture);
+				// Конвертация изображения
+				if (find_element.Picture.Length > 0)
+				{
+					ViewBag.Picture = "data:image/jpg;base64," + Convert.ToBase64String(find_element.Picture);
+				}
+
+				// Стикеры
+				List<Sticker> stickers = await stickerService.GetFilteredList("element", find_element.Id);
+				ViewBag.Stickers = stickers;
+
+				// Файлы
+				List<File> files = await fileService.GetFilteredList("element", find_element.Id);
+				ViewBag.Files = files;
+
+				// Блок, на котором находится элемент
+				Block find_block = await blockService.GetElement(new Block { Id = find_element.BlockId });
+				ViewBag.Block = find_block;
+
+				// Доска, на которой находится блок
+				Board board = await boardService.GetElement(new Board { Id = find_block.BoardId });
+				List<Block> added_blocks = new List<Block>();
+				foreach (var b in await blockService.GetFilteredList(new Block { BoardId = board.Id })) { added_blocks.Add(b); }
+				ViewBag.Board = new Board
+				{
+					Id = board.Id,
+					BoardName = board.BoardName,
+					BoardThematics = board.BoardThematics,
+					Blocks = added_blocks
+				};
+				return View(find_element);
 			}
-
-			// Стикеры
-			List<Sticker> stickers = await stickerService.GetFilteredList("element", find_element.Id);
-			ViewBag.Stickers = stickers;
-
-			// Файлы
-			List<File> files = await fileService.GetFilteredList("element", find_element.Id);
-			ViewBag.Files = files;
-
-			// Блок, на котором находится элемент
-			Block find_block = await blockService.GetElement(new Block { Id = find_element.BlockId });
-			ViewBag.Block = find_block;
-
-			// Доска, на которой находится блок
-			Board board = await boardService.GetElement(new Board { Id = find_block.BoardId });
-			List<Block> added_blocks = new List<Block>();
-			foreach (var b in await blockService.GetFilteredList(new Block { BoardId = board.Id })) { added_blocks.Add(b); }
-			ViewBag.Board = new Board
+			else
 			{
-				Id = board.Id,
-				BoardName = board.BoardName,
-				BoardThematics = board.BoardThematics,
-				Blocks = added_blocks
-			};
-			return View(find_element);
+				_notyf.Error("Ошибка");
+				return Redirect("javascript: history.go(-1)");
+			}
 		}
 
 		// Добавление элемента
 		[HttpGet]
-		public IActionResult AddElement(string blockId)
+		public async Task<IActionResult> AddElement(string blockId)
 		{
-			// Передача id блока, на котором будет находиться элемент
-			ViewData["blockId"] = blockId;
-			return View();
+			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+			ViewBag.ActivePart = activeUser;
+
+			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+			ViewBag.ActiveBoards = activeBoards;
+
+			Block block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+			if (block != null)
+			{
+				// Передача id блока, на котором будет находиться элемент
+				ViewData["blockId"] = block.Id;
+				return View();
+			}
+			else
+			{
+				_notyf.Error("Ошибка");
+				return Redirect("javascript: history.go(-1)");
+			}
 		}
 		[HttpPost]
 		public async Task AddElement(string blockId, string name, string text, IFormFile pict)
@@ -83,51 +127,60 @@ namespace ElectronicBoard.Controllers
 			{
 				try
 				{
-					// Изображение
-					byte[] picture = new byte[] { };
-					if (pict != null)
+					Block block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+					if (block != null)
 					{
-						using (var target = new MemoryStream())
+						// Изображение
+						byte[] picture = new byte[] { };
+						if (pict != null)
 						{
-							pict.CopyTo(target);
-							picture = target.ToArray();
+							using (var target = new MemoryStream())
+							{
+								pict.CopyTo(target);
+								picture = target.ToArray();
+							}
 						}
+
+						// ID блока
+						int BlockId = Convert.ToInt32(blockId);
+
+						// Добавление и отображение элемента блока
+						await elementService.Insert(new SimpleElement 
+						{ 
+							SimpleElementName = name, 
+							SimpleElementText = text, 
+							BlockId = BlockId, 
+							Picture = picture
+						});
+						SimpleElement new_element = await elementService.GetElement(new SimpleElement
+						{
+							SimpleElementName = name,
+							SimpleElementText = text,
+							BlockId = BlockId
+						});
+
+						Response.Redirect($"/element/index?" +
+							$"Id={idn.GetAscii(new_element.Id.ToString())}" +
+							$"&SimpleElementName={idn.GetAscii(new_element.SimpleElementName)}" +
+							$"&SimpleElementText={idn.GetAscii(new_element.SimpleElementText)}" +
+							$"&BlockId={idn.GetAscii(new_element.BlockId.ToString())}");
 					}
-
-					// ID блока
-					int BlockId = Convert.ToInt32(blockId);
-
-					// Добавление и отображение элемента блока
-					await elementService.Insert(new SimpleElement 
-					{ 
-						SimpleElementName = name, 
-						SimpleElementText = text, 
-						BlockId = BlockId, 
-						Picture = picture
-					});
-					SimpleElement new_element = await elementService.GetElement(new SimpleElement
+					else
 					{
-						SimpleElementName = name,
-						SimpleElementText = text,
-						BlockId = BlockId
-					});
-
-					Response.Redirect($"/element/index?" +
-						$"Id={new_element.Id}" +
-						$"&SimpleElementName={new_element.SimpleElementName}" +
-						$"&SimpleElementText={new_element.SimpleElementText}" +
-						$"&BlockId={new_element.BlockId}");
+						_notyf.Error("Ошибка");
+						Response.Redirect("javascript: history.go(-1)");
+					}
 				}
 				catch (Exception ex)
 				{
 					_notyf.Error(ex.Message);
-					Response.Redirect($"/element/addelement?blockId=" + blockId);
+					Response.Redirect($"/element/addelement?blockId=" + idn.GetAscii(blockId));
 				}				
 			}
 			else
 			{
 				_notyf.Error("Заполните все поля");
-				Response.Redirect($"/element/addelement?blockId=" + blockId);
+				Response.Redirect($"/element/addelement?blockId=" + idn.GetAscii(blockId));
 			}
 		}
 
@@ -135,14 +188,29 @@ namespace ElectronicBoard.Controllers
 		[HttpGet]
 		public async Task<IActionResult> UpdElement(SimpleElement element)
 		{
+			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+			ViewBag.ActivePart = activeUser;
+
+			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+			ViewBag.ActiveBoards = activeBoards;
+
 			SimpleElement find_element = await elementService.GetElement(new SimpleElement
 			{
 				Id = element.Id,
-				SimpleElementName = element.SimpleElementName,
-				SimpleElementText = element.SimpleElementText,
+				SimpleElementName = idn.GetUnicode(element.SimpleElementName),
+				SimpleElementText = idn.GetUnicode(element.SimpleElementText),
 				BlockId = element.BlockId
 			});
-			return View(find_element);
+			if (find_element != null)
+			{
+				return View(find_element);
+			}
+			else
+			{
+				_notyf.Error("Ошибка");
+				return Redirect("javascript: history.go(-1)");
+			}
 		}
 		[HttpPost]
 		public async Task UpdElement(string id, string blockId, 
@@ -153,100 +221,110 @@ namespace ElectronicBoard.Controllers
 			{
 				try
 				{
-					// ID элемента
-					int ElementId = Convert.ToInt32(id);
-					// ID блока
-					int BlockId = Convert.ToInt32(blockId);
+					SimpleElement find_element = await elementService.GetElement(new SimpleElement { Id = Convert.ToInt32(id)  });
+					Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
 
-					// Изображение
-					bool del = true;
-					switch (delpic)
+					if (find_block != null && find_element != null)
 					{
-						case "on":
-							del = true;
-							break;
-						case null:
-							del = false;
-							break;
-					}
-					byte[] picture = new byte[] { };
-					if (pict != null)
-					{
-						using (var target = new MemoryStream())
+						// Изображение
+						bool del = true;
+						switch (delpic)
 						{
-							await pict.CopyToAsync(target);
-							picture = target.ToArray();
+							case "on":
+								del = true;
+								break;
+							case null:
+								del = false;
+								break;
 						}
-					}
-					else if (!del)
-					{
-						picture = (await elementService.GetElement(new SimpleElement { Id = ElementId })).Picture;
-					}
+						byte[] picture = new byte[] { };
+						if (pict != null)
+						{
+							using (var target = new MemoryStream())
+							{
+								await pict.CopyToAsync(target);
+								picture = target.ToArray();
+							}
+						}
+						else if (!del)
+						{
+							picture = (await elementService.GetElement(new SimpleElement { Id = find_element.Id })).Picture;
+						}
 
-					// Редактирование и отображение элемента
-					await elementService.Update(new SimpleElement 
-					{ 
-						Id = ElementId, 
-						SimpleElementName = name, 
-						SimpleElementText = text, 
-						BlockId = BlockId, 
-						Picture = picture 
-					});
-					Response.Redirect($"/element/index?" +
-						$"Id={ElementId}" +
-						$"BlockId={BlockId}" +
-						$"&SimpleElementName={name}" +
-						$"&SimpleElementText={text}");
+						// Редактирование и отображение элемента
+						await elementService.Update(new SimpleElement
+						{
+							Id = find_element.Id,
+							SimpleElementName = name,
+							SimpleElementText = text,
+							BlockId = find_block.Id,
+							Picture = picture
+						});
+						Response.Redirect($"/element/index?" +
+							$"Id={idn.GetAscii(find_element.Id.ToString())}" +
+							$"BlockId={idn.GetAscii(find_block.Id.ToString())}" +
+							$"&SimpleElementName={idn.GetAscii(name)}" +
+							$"&SimpleElementText={idn.GetAscii(text)}");
+					}
+					else
+					{
+						_notyf.Error("Ошибка");
+						Response.Redirect("javascript: history.go(-1)");
+					}
 				}
 				catch (Exception ex)
 				{
 					_notyf.Error(ex.Message);
 					Response.Redirect($"/element/updelement?" +
-						$"Id={id}" +
-						$"BlockId={blockId}" +
-						$"&SimpleElementName={name}" +
-						$"&SimpleElementText={text}");
+						$"Id={idn.GetAscii(id)}" +
+						$"BlockId={idn.GetAscii(blockId)}" +
+						$"&SimpleElementName={idn.GetAscii(name)}" +
+						$"&SimpleElementText={idn.GetAscii(text)}");
 				}				
 			}
 			else
 			{
 				_notyf.Error("Заполните все поля");
 				Response.Redirect($"/element/updelement?" +
-					$"Id={id}" +
-					$"BlockId={blockId}" +
-					$"&SimpleElementName={name}" +
-					$"&SimpleElementText={text}");
+					$"Id={idn.GetAscii(id)}" +
+					$"BlockId={idn.GetAscii(blockId)}" +
+					$"&SimpleElementName={idn.GetAscii(name)}" +
+					$"&SimpleElementText={idn.GetAscii(text)}");
 			}
 		}
 
 		// Удаление элемента
 		[HttpGet]
-		public void DeleteElement(string blockId, string elementId) 
+		public async Task DeleteElement(string blockId, string elementId) 
 		{
 			if (!string.IsNullOrEmpty(elementId) && !string.IsNullOrEmpty(blockId))
 			{
-				int block_id;
-				int element_id;
-				bool isNumeric_blockId = int.TryParse(blockId, out block_id);
-				bool isNumeric_elementId = int.TryParse(elementId, out element_id);
-				if (isNumeric_blockId && isNumeric_elementId)
+				SimpleElement find_element = await elementService.GetElement(new SimpleElement { Id = Convert.ToInt32(elementId) });
+				Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+
+				if (find_block != null && find_element != null)
 				{
 					try
 					{
-						elementService.Delete(new SimpleElement { Id = element_id });
-						Response.Redirect($"/block/index?Id=" + block_id);
+						await elementService.Delete(new SimpleElement { Id = find_element.Id });
+						Response.Redirect($"/block/index?Id=" + idn.GetAscii(find_block.Id.ToString()));
 					}
 					catch (Exception ex)
 					{
 						_notyf.Error(ex.Message);
-						Response.Redirect($"/element/index?Id=" + element_id);
+						Response.Redirect($"/element/index?Id=" + idn.GetAscii(find_element.Id.ToString()));
 					}
 				}
 				else
 				{
 					_notyf.Error("Элемент не найден");
-					Response.Redirect($"/element/index?Id=" + element_id);
+					Response.Redirect($"/element/index?Id=" + idn.GetAscii(find_element.Id.ToString()));
 				}
+			}
+			else
+			{
+				_notyf.Error("Ошибка");
+				Response.Redirect("javascript: history.go(-1)");
 			}
 		}
 

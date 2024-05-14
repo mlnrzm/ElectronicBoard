@@ -3,13 +3,19 @@ using ElectronicBoard.Models;
 using File = ElectronicBoard.Models.File;
 using ElectronicBoard.Services.ServiceContracts;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
+using System.Globalization;
+using Microsoft.AspNetCore.Identity;
 
 namespace ElectronicBoard.Controllers
 {
 	public class ProjectController : Controller
 	{
 		private readonly ILogger<ProjectController> _logger;
+		private readonly IdnMapping idn;
+
+		private readonly UserManager<IdentityUser<int>> _userManager;
+		private readonly IParticipantService participantService;
+
 		private readonly IProjectService projectService;
 		private readonly IStageService stageService;
 		private readonly IStickerService stickerService;
@@ -20,7 +26,8 @@ namespace ElectronicBoard.Controllers
 
 		public ProjectController(ILogger<ProjectController> logger,
 			INotyfService notyf, IProjectService _projectService, 
-			IBoardService _boardService, IBlockService _blockService, IStageService _stageService, IStickerService _stickerService, IFileService _fileService)
+			IBoardService _boardService, IBlockService _blockService, IStageService _stageService, IStickerService _stickerService, IFileService _fileService,
+			UserManager<IdentityUser<int>> userManager, IParticipantService _participantService)
 		{
 			_logger = logger;
 			_notyf = notyf;
@@ -30,99 +37,142 @@ namespace ElectronicBoard.Controllers
 			stageService = _stageService;
 			stickerService = _stickerService;
 			fileService = _fileService;
+			_userManager = userManager;
+			participantService = _participantService;
+			idn = new IdnMapping();
 		}
 		// Отображение страницы с информацией о проекте
 		public async Task<IActionResult> Index(Project project)
 		{
+			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+			ViewBag.ActivePart = activeUser;
+
+			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+			ViewBag.ActiveBoards = activeBoards;
+
 			Project find_project = await projectService.GetElement(new Project { Id = project.Id, BlockId = project.BlockId });
-
-			// Конвертация изображения
-			if (find_project.Picture.Length > 0)
+			if (find_project != null)
 			{
-				ViewBag.Picture = "data:image/jpg;base64," + Convert.ToBase64String(find_project.Picture);
+				// Конвертация изображения
+				if (find_project.Picture.Length > 0)
+				{
+					ViewBag.Picture = "data:image/jpg;base64," + Convert.ToBase64String(find_project.Picture);
+				}
+
+				// Стикеры
+				List<Sticker> stickers = await stickerService.GetFilteredList("project", find_project.Id);
+				ViewBag.Stickers = stickers;
+
+				// Файлы
+				List<File> files = await fileService.GetFilteredList("project", find_project.Id);
+				ViewBag.Files = files;
+
+				// Этапы проекта
+				List<Stage> added_stages = new List<Stage>();
+				foreach (var b in await stageService.GetFilteredList(find_project.Id)) { added_stages.Add(b); }
+				ViewBag.Stages = added_stages;
+
+				// Блок, на котором находится элемент
+				Block find_block = await blockService.GetElement(new Block { Id = find_project.BlockId });
+				ViewBag.Block = find_block;
+
+				// Доска, на которой находится блок
+				Board board = await boardService.GetElement(new Board { Id = find_block.BoardId });
+				List<Block> added_blocks = new List<Block>();
+				foreach (var b in await blockService.GetFilteredList(new Block { BoardId = board.Id })) { added_blocks.Add(b); }
+				ViewBag.Board = new Board
+				{
+					Id = board.Id,
+					BoardName = board.BoardName,
+					BoardThematics = board.BoardThematics,
+					Blocks = added_blocks
+				};
+				return View(find_project);
 			}
-
-			// Стикеры
-			List<Sticker> stickers = await stickerService.GetFilteredList("project", find_project.Id);
-			ViewBag.Stickers = stickers;
-
-			// Файлы
-			List<File> files = await fileService.GetFilteredList("project", find_project.Id);
-			ViewBag.Files = files;
-
-			// Этапы проекта
-			List<Stage> added_stages = new List<Stage>();
-			foreach (var b in await stageService.GetFilteredList(find_project.Id)) { added_stages.Add(b); }
-			ViewBag.Stages = added_stages;
-
-			// Блок, на котором находится элемент
-			Block find_block = await blockService.GetElement(new Block { Id = find_project.BlockId });
-			ViewBag.Block = find_block;
-
-			// Доска, на которой находится блок
-			Board board = await boardService.GetElement(new Board { Id = find_block.BoardId });
-			List<Block> added_blocks = new List<Block>();
-			foreach (var b in await blockService.GetFilteredList(new Block { BoardId = board.Id })) { added_blocks.Add(b); }
-			ViewBag.Board = new Board
+			else
 			{
-				Id = board.Id,
-				BoardName = board.BoardName,
-				BoardThematics = board.BoardThematics,
-				Blocks = added_blocks
-			};
-			return View(find_project);
+				_notyf.Error("Ошибка");
+				return Redirect("javascript: history.go(-1)");
+			}
 		}
 
 		// Добавление проекта
 		[HttpGet]
-		public IActionResult AddProject(string blockId)
+		public async Task<IActionResult> AddProject(string blockId)
 		{
-			// Передача id блока, на котором будет находиться проект
-			ViewData["blockId"] = blockId;
-			return View();
+			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+			ViewBag.ActivePart = activeUser;
+
+			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+			ViewBag.ActiveBoards = activeBoards;
+
+			Block block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+			if (block != null)
+			{
+
+				// Передача id блока, на котором будет находиться проект
+				ViewData["blockId"] = blockId;
+				return View();
+			}
+			else
+			{
+				_notyf.Error("Ошибка");
+				return Redirect("javascript: history.go(-1)");
+			}
 		}
 		[HttpPost]
 		public async Task AddProject(string blockId, string name, string text, string desc, IFormFile pict)
 		{
 			if (!string.IsNullOrEmpty(blockId) && !string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(text) && !string.IsNullOrEmpty(desc))
-			{	
-				try
+			{
+				Block block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				if (block != null)
 				{
-					// Изображение
-					byte[] picture = new byte[] { };
-					if (pict != null)
+					try
 					{
-						using (var target = new MemoryStream())
+						// Изображение
+						byte[] picture = new byte[] { };
+						if (pict != null)
 						{
-							await pict.CopyToAsync(target);
-							picture = target.ToArray();
+							using (var target = new MemoryStream())
+							{
+								await pict.CopyToAsync(target);
+								picture = target.ToArray();
+							}
 						}
+
+						// ID блока
+						int BlockId = Convert.ToInt32(blockId);
+
+						// Добавление и отображение элемента блока
+						await projectService.Insert(new Project { ProjectName = name, ProjectText = text, ProjectDescription = desc, BlockId = BlockId, Picture = picture });
+						Project new_project = await projectService.GetElement(new Project
+						{
+							ProjectName = name,
+							ProjectText = text,
+							ProjectDescription = desc,
+							BlockId = BlockId
+						});
+
+						Response.Redirect($"/project/index?" +
+							$"Id={new_project.Id}" +
+							$"&ProjectName={idn.GetAscii(new_project.ProjectName)}" +
+							$"&ProjectText={idn.GetAscii(new_project.ProjectText)}" +
+							$"&ProjectDescription={idn.GetAscii(new_project.ProjectDescription)}" +
+							$"&BlockId={new_project.BlockId}");
 					}
-
-					// ID блока
-					int BlockId = Convert.ToInt32(blockId);
-
-					// Добавление и отображение элемента блока
-					await projectService.Insert(new Project { ProjectName = name, ProjectText = text, ProjectDescription = desc, BlockId = BlockId, Picture = picture });
-					Project new_project = await projectService.GetElement(new Project
+					catch (Exception ex)
 					{
-						ProjectName = name,
-						ProjectText = text,
-						ProjectDescription = desc,
-						BlockId = BlockId
-					});
-
-					Response.Redirect($"/project/index?" +
-						$"Id={new_project.Id}" +
-						$"&ProjectName={new_project.ProjectName}" +
-						$"&ProjectText={new_project.ProjectText}" +
-						$"&ProjectDescription={new_project.ProjectDescription}" +
-						$"&BlockId={new_project.BlockId}");
+						_notyf.Error(ex.Message);
+						Response.Redirect($"/project/addproject?blockId=" + blockId);
+					}
 				}
-				catch (Exception ex)
+				else
 				{
-					_notyf.Error(ex.Message);
-					Response.Redirect($"/project/addproject?blockId=" + blockId);
+					_notyf.Error("Ошибка");
+					Response.Redirect("javascript: history.go(-1)");
 				}
 			}
 			else
@@ -136,15 +186,30 @@ namespace ElectronicBoard.Controllers
 		[HttpGet]
 		public async Task<IActionResult> UpdProject(Project project)
 		{
+			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+			ViewBag.ActivePart = activeUser;
+
+			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+			ViewBag.ActiveBoards = activeBoards;
+
 			Project find_project = await projectService.GetElement(new Project
 			{
 				Id = project.Id,
-				ProjectName = project.ProjectName,
-				ProjectText = project.ProjectText,
-				ProjectDescription = project.ProjectDescription,
+				ProjectName = idn.GetUnicode(project.ProjectName),
+				ProjectText = idn.GetUnicode(project.ProjectText),
+				ProjectDescription = idn.GetUnicode(project.ProjectDescription),
 				BlockId = project.BlockId
 			});
-			return View(find_project);
+			if (find_project != null)
+			{
+				return View(find_project);
+			}
+			else
+			{
+				_notyf.Error("Ошибка");
+				return Redirect("javascript: history.go(-1)");
+			}
 		}
 		[HttpPost]
 		public async Task UpdProject(string id, string blockId, 
@@ -153,54 +218,64 @@ namespace ElectronicBoard.Controllers
 			if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(blockId) &&
 				!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(text))
 			{
-				try
+				Project pr = await projectService.GetElement(new Project { Id = Convert.ToInt32(id) });
+				Block bl = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				if (pr != null && bl != null)
 				{
-					// ID элемента
-					int ElementId = Convert.ToInt32(id);
-					// ID блока
-					int BlockId = Convert.ToInt32(blockId);
+					try
+					{
+						// ID элемента
+						int ElementId = Convert.ToInt32(id);
+						// ID блока
+						int BlockId = Convert.ToInt32(blockId);
 
-					// Изображение
-					bool del = true;
-					switch (delpic)
-					{
-						case "on":
-							del = true;
-							break;
-						case null:
-							del = false;
-							break;
-					}
-					byte[] picture = new byte[] { };
-					if (pict != null)
-					{
-						using (var target = new MemoryStream())
+						// Изображение
+						bool del = true;
+						switch (delpic)
 						{
-							await pict.CopyToAsync(target);
-							picture = target.ToArray();
+							case "on":
+								del = true;
+								break;
+							case null:
+								del = false;
+								break;
 						}
-					}
-					else if (!del)
-					{
-						picture = (await projectService.GetElement(new Project { Id = ElementId })).Picture;
-					}
+						byte[] picture = new byte[] { };
+						if (pict != null)
+						{
+							using (var target = new MemoryStream())
+							{
+								await pict.CopyToAsync(target);
+								picture = target.ToArray();
+							}
+						}
+						else if (!del)
+						{
+							picture = (await projectService.GetElement(new Project { Id = ElementId })).Picture;
+						}
 
-					// Редактирование и отображение проекта
-					await projectService.Update(new Project { Id = ElementId, ProjectName = name, ProjectText = text, ProjectDescription = desc, BlockId = BlockId, Picture = picture });
-					Response.Redirect($"/project/index?" +
-						$"Id={ElementId}" +
-						$"&BlockId={BlockId}" +
-						$"&ProjectName={name}" +
-						$"&ProjectText={text}");
+						// Редактирование и отображение проекта
+						await projectService.Update(new Project { Id = ElementId, ProjectName = name, ProjectText = text, ProjectDescription = desc, BlockId = BlockId, Picture = picture });
+						Response.Redirect($"/project/index?" +
+							$"Id={ElementId}" +
+							$"&BlockId={BlockId}" +
+							$"&ProjectName={idn.GetAscii(name)}" +
+							$"&ProjectText={idn.GetAscii(text)}");
+					}
+					catch (Exception ex)
+					{
+						_notyf.Error(ex.Message);
+						Response.Redirect($"/project/updproject?" +
+							$"Id={id}" +
+							$"&BlockId={blockId}" +
+							$"&ProjectName={idn.GetAscii(name)}" +
+							$"&ProjectText={idn.GetAscii(text)}");
+					}
 				}
-				catch (Exception ex)
+				else
 				{
-					_notyf.Error(ex.Message);
-					Response.Redirect($"/project/updproject?" +
-						$"Id={id}" +
-						$"&BlockId={blockId}" +
-						$"&ProjectName={name}" +
-						$"&ProjectText={text}");
+					_notyf.Error("Ошибка");
+					Response.Redirect("javascript: history.go(-1)");
 				}
 			}
 			else
@@ -209,8 +284,8 @@ namespace ElectronicBoard.Controllers
 				Response.Redirect($"/project/updproject?" +
 					$"Id={id}" +
 					$"&BlockId={blockId}" +
-					$"&ProjectName={name}" +
-					$"&ProjectText={text}");
+					$"&ProjectName={idn.GetAscii(name)}" +
+					$"&ProjectText={idn.GetAscii(text)}");
 			}
 		}
 
@@ -220,28 +295,31 @@ namespace ElectronicBoard.Controllers
 		{
 			if (!string.IsNullOrEmpty(projectId) && !string.IsNullOrEmpty(blockId))
 			{
-				int block_id;
-				int element_id;
-				bool isNumeric_blockId = int.TryParse(blockId, out block_id);
-				bool isNumeric_elementId = int.TryParse(projectId, out element_id);
-				if (isNumeric_blockId && isNumeric_elementId)
+				Project pr = await projectService.GetElement(new Project { Id = Convert.ToInt32(projectId) });
+				Block bl = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				if (pr != null && bl != null)
 				{
 					try
 					{
-						await projectService.Delete(new Project { Id = element_id });
-						Response.Redirect($"/block/index?Id=" + block_id);
+						await projectService.Delete(new Project { Id = pr.Id });
+						Response.Redirect($"/block/index?Id=" + bl.Id);
 					}
 					catch (Exception ex)
 					{
 						_notyf.Error(ex.Message);
-						Response.Redirect($"/project/index?Id=" + element_id);
+						Response.Redirect($"/project/index?Id=" + pr.Id);
 					}
 				}
 				else
 				{
 					_notyf.Error("Проект не найден");
-					Response.Redirect($"/project/index?Id=" + element_id);
+					Response.Redirect($"/project/index?Id=" + pr.Id);
 				}
+			}
+			else
+			{
+				_notyf.Error("Ошибка");
+				Response.Redirect("javascript: history.go(-1)");
 			}
 		}
 

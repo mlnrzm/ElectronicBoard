@@ -1,32 +1,41 @@
 ﻿using AspNetCoreHero.ToastNotification.Abstractions;
+using ElectronicBoard.Models;
+using ElectronicBoard.Services.Implements;
 using ElectronicBoard.Services.ServiceContracts;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Globalization;
 using File = ElectronicBoard.Models.File;
 
 namespace ElectronicBoard.Controllers
 {
+	[Authorize]
 	public class FileController : Controller
 	{
 		IWebHostEnvironment Environment;
 		private readonly ILogger<StickerController> _logger;
 		private readonly INotyfService _notyf;
+		private readonly IdnMapping idn;
+
+		private readonly UserManager<IdentityUser<int>> _userManager;
+		private readonly IParticipantService participantService;
 
 		private readonly IFileService fileService;
 
 		private readonly IProjectService projectService;
 		private readonly ISimpleElementService elementService;
 		private readonly IEventService eventService;
-		private readonly IParticipantService participantService;
 		private readonly IGrantService grantService;
 		private readonly IArticleService articleService;
 		private readonly IStageService stageService;
-
 		private readonly IBlockService blockService;
+		private readonly IBoardService boardService;
 
 		public FileController(IWebHostEnvironment appEnvironment, ILogger<StickerController> logger, INotyfService notyf, IFileService _fileService,
 			IProjectService _projectService, ISimpleElementService _elementService, IArticleService _articleService, IStageService _stageService,
 			IEventService _eventService, IParticipantService _participantService, IGrantService _grantService,
-			IBlockService _blockService)
+			IBlockService _blockService, UserManager<IdentityUser<int>> userManager, IBoardService _boardService)
 		{
 			_logger = logger;
 			_notyf = notyf;
@@ -40,18 +49,28 @@ namespace ElectronicBoard.Controllers
 			articleService = _articleService;
 			stageService = _stageService;
 			Environment = appEnvironment;
+			idn = new IdnMapping();
+			boardService = _boardService;
+			_userManager = userManager;
 		}
 
 		// Добавление файла
 		[HttpGet]
-		public IActionResult AddFile(string blockId,
+		public async Task<IActionResult> AddFile(string blockId,
 			string projectId, string elementId, string eventId, string partId, string grantId, string stageId, string articleId)
 		{
+			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+			ViewBag.ActivePart = activeUser;
+
+			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+			ViewBag.ActiveBoards = activeBoards;
+
 			if (string.IsNullOrEmpty(projectId) && string.IsNullOrEmpty(elementId) && string.IsNullOrEmpty(eventId)
 				&& string.IsNullOrEmpty(partId) && string.IsNullOrEmpty(grantId) && string.IsNullOrEmpty(stageId) && string.IsNullOrEmpty(articleId))
 			{
 				_notyf.Error("Ошибка добавления файла");
-				Response.Redirect($"/block/index?Id=" + blockId);
+				Response.Redirect($"/block/index?Id=" + idn.GetAscii(blockId));
 			}
 			else
 			{
@@ -94,8 +113,6 @@ namespace ElectronicBoard.Controllers
 
 				try
 				{
-					//ТРАНЗАКЦИЯ
-
 					// Добавление файла в БД
 					await fileService.Insert(new File
 					{
@@ -125,39 +142,44 @@ namespace ElectronicBoard.Controllers
 						ArticleId = ArticleId
 					});
 
-					// Сохранение файла в папку Files с названием (id сущности файла)
-					string wwwPath = this.Environment.WebRootPath;
-					string contentPath = this.Environment.ContentRootPath;
-
-					string path = Path.Combine(this.Environment.WebRootPath, "Files");
-					if (!Directory.Exists(path))
+					try
 					{
-						Directory.CreateDirectory(path);
+						// Сохранение файла в папку Files с названием (id сущности файла)
+						string wwwPath = this.Environment.WebRootPath;
+						string contentPath = this.Environment.ContentRootPath;
+
+						string path = Path.Combine(this.Environment.WebRootPath, "Files");
+						if (!Directory.Exists(path))
+						{
+							Directory.CreateDirectory(path);
+						}
+						string[] name = file.FileName.Split('.');
+						string fileName = add_file.Id + "." + name[name.Length - 1];
+						using (FileStream stream = new FileStream(Path.Combine(path, fileName), FileMode.Create))
+						{
+							file.CopyTo(stream);
+						}
+
+						// Редактирование сущности файла с добавлением пути файла в папке
+						await fileService.Update(new File
+						{
+							Id = add_file.Id,
+							FileName = file.FileName,
+							Path = Path.Combine(path, fileName),
+							ContentType = file.ContentType,
+							EventId = EventId,
+							ProjectId = ProjectId,
+							SimpleElementId = ElementId,
+							GrantId = GrantId,
+							ParticipantId = PartId,
+							StageId = StageId,
+							ArticleId = ArticleId
+						});
 					}
-					string[] name = file.FileName.Split('.');
-					string fileName = add_file.Id + "." + name[name.Length - 1];
-					using (FileStream stream = new FileStream(Path.Combine(path, fileName), FileMode.Create))
+					catch (Exception ex) 
 					{
-						file.CopyTo(stream);
+						await DeleteFile(add_file.Id.ToString(), blockId);
 					}
-
-					// Редактирование сущности файла с добавлением пути файла в папке
-					await fileService.Update(new File 
-					{
-						Id = add_file.Id,
-						FileName = file.FileName,
-						Path = Path.Combine(path, fileName),
-						ContentType = file.ContentType,
-						EventId = EventId,
-						ProjectId = ProjectId,
-						SimpleElementId = ElementId,
-						GrantId = GrantId,
-						ParticipantId = PartId,
-						StageId = StageId,
-						ArticleId = ArticleId
-					});
-
-					// КОНЕЦ ТРАНЗАКЦИИ
 
 					// Отображение соответствующего элемента
 					if (ProjectId != null) { Response.Redirect($"/project/index?Id={ProjectId}"); }

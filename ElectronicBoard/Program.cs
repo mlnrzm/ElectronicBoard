@@ -1,20 +1,11 @@
 using ElectronicBoard.Models;
-using System.Security.Claims; 
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Hosting;
-
 
 namespace ElectronicBoard
 {
 	public class Program
 	{
-		// Авторизованный пользователь в системе
-		public static Participant Participant { get; set; }
-
-		// Доски  авторизованного пользователя
-		public static List<Board> Boards { get; set; }
-
+		// Время последнего обновления учётных записей
+		public static DateTime? DateUpdate { get; set; }
 		// Общая доска научных групп
 		public static Board MainBoard { get; set; }
 

@@ -1,12 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.General;
-using System.Collections.Generic;
-using System.ComponentModel;
+using Microsoft.AspNetCore.Identity;
 
 namespace ElectronicBoard.Models
 {
-	public class ElectronicBoardDatabase : DbContext
+	public class ElectronicBoardDatabase : IdentityDbContext<IdentityUser<int>, IdentityRole<int>, int>
 	{
 		public ElectronicBoardDatabase()
 		{
@@ -44,6 +42,6 @@ namespace ElectronicBoard.Models
 		public virtual DbSet<SimpleElement> SimpleElements { set; get; }
 		public virtual DbSet<Stage> Stages { set; get; }
 		public virtual DbSet<Sticker> Stickers { set; get; }
-
+		public virtual DbSet<UserLDAP> UserLDAPs { set; get; }
 	}
 }

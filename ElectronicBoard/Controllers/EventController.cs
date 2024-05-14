@@ -2,14 +2,23 @@
 using ElectronicBoard.Models;
 using ElectronicBoard.Services.ServiceContracts;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using System.Globalization;
 using File = ElectronicBoard.Models.File;
 
 namespace ElectronicBoard.Controllers
 {
+	[Authorize]
 	public class EventController : Controller
 	{
 		private readonly ILogger<EventController> _logger;
+		private readonly IdnMapping idn;
+
+		private readonly UserManager<IdentityUser<int>> _userManager;
+		private readonly IParticipantService participantService;
+
 		private readonly IEventService eventService;
 		private readonly IBoardService boardService;
 		private readonly IBlockService blockService;
@@ -20,7 +29,8 @@ namespace ElectronicBoard.Controllers
 
 		public EventController(ILogger<EventController> logger, INotyfService notyf, 
 			IEventService _eventService, IBoardService _boardService, 
-			IBlockService _blockService, IArticleService _articleService, IStickerService _stickerService, IFileService _fileService)
+			IBlockService _blockService, IArticleService _articleService, IStickerService _stickerService, IFileService _fileService,
+			UserManager<IdentityUser<int>> userManager, IParticipantService _participantService)
 		{
 			_logger = logger;
 			_notyf = notyf;
@@ -30,59 +40,93 @@ namespace ElectronicBoard.Controllers
 			articleService = _articleService;
 			stickerService = _stickerService;
 			fileService = _fileService;
+			idn = new IdnMapping();
+			_userManager = userManager;
+			participantService = _participantService;
 		}
 
 		// Отображение страницы с мероприятием
 		public async Task<IActionResult> Index(string eventId, string blockId)
 		{
+			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+			ViewBag.ActivePart = activeUser;
+
+			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+			ViewBag.ActiveBoards = activeBoards;
+
 			int EventId = Convert.ToInt32(eventId);
 			int BlockId = Convert.ToInt32(blockId);
 
 			Event find_event = await eventService.GetElement(new Event { Id = EventId });
 
-			// Конвертация изображения
-			if (find_event.Picture.Length > 0) 
+			if (find_event != null)
 			{
-				ViewBag.Picture = "data:image/jpg;base64," + Convert.ToBase64String(find_event.Picture);
+				// Конвертация изображения
+				if (find_event.Picture.Length > 0)
+				{
+					ViewBag.Picture = "data:image/jpg;base64," + Convert.ToBase64String(find_event.Picture);
+				}
+
+				// Стикеры
+				List<Sticker> stickers = await stickerService.GetFilteredList("event", find_event.Id);
+				ViewBag.Stickers = stickers;
+
+				// Файлы
+				List<File> files = await fileService.GetFilteredList("event", EventId);
+				ViewBag.Files = files;
+
+				List<Article> added_articles = new List<Article>();
+				foreach (var b in await articleService.GetFilteredList(EventId)) { added_articles.Add(b); }
+				ViewBag.Articles = added_articles;
+
+				// Блок, на котором находится элемент
+				Block find_block = await blockService.GetElement(new Block { Id = BlockId });
+				ViewBag.Block = find_block;
+
+				// Доска, на которой находится блок
+				Board board = await boardService.GetElement(new Board { Id = find_block.BoardId });
+				List<Block> added_blocks = new List<Block>();
+				foreach (var b in await blockService.GetFilteredList(new Block { BoardId = board.Id })) { added_blocks.Add(b); }
+				ViewBag.Board = new Board
+				{
+					Id = board.Id,
+					BoardName = board.BoardName,
+					BoardThematics = board.BoardThematics,
+					Blocks = added_blocks
+				};
+				return View(find_event);
 			}
-
-			// Стикеры
-			List<Sticker> stickers = await stickerService.GetFilteredList("event", find_event.Id);
-			ViewBag.Stickers = stickers;
-
-			// Файлы
-			List<File> files = await fileService.GetFilteredList("event", EventId);
-			ViewBag.Files = files;
-
-			List<Article> added_articles = new List<Article>();
-			foreach (var b in await articleService.GetFilteredList(EventId)) { added_articles.Add(b); }
-			ViewBag.Articles = added_articles;
-
-			// Блок, на котором находится элемент
-			Block find_block = await blockService.GetElement(new Block { Id = BlockId });
-			ViewBag.Block = find_block;
-
-			// Доска, на которой находится блок
-			Board board = await boardService.GetElement(new Board { Id = find_block.BoardId });
-			List<Block> added_blocks = new List<Block>();
-			foreach (var b in await blockService.GetFilteredList(new Block { BoardId = board.Id })) { added_blocks.Add(b); }
-			ViewBag.Board = new Board
+			else
 			{
-				Id = board.Id,
-				BoardName = board.BoardName,
-				BoardThematics = board.BoardThematics,
-				Blocks = added_blocks
-			};
-			return View(find_event);
+				_notyf.Error("Ошибка");
+				return Redirect("javascript: history.go(-1)");
+			}
 		}
 
 		// Добавление нового мероприятия
 		[HttpGet]
-		public IActionResult AddNewEvent(string blockId)
+		public async Task<IActionResult> AddNewEvent(string blockId)
 		{
-			// Передача id блока, на котором будет находиться мероприятие
-			ViewData["blockId"] = blockId;
-			return View();
+			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+			ViewBag.ActivePart = activeUser;
+
+			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+			ViewBag.ActiveBoards = activeBoards;
+
+			Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+			if (find_block != null)
+			{
+				// Передача id блока, на котором будет находиться мероприятие
+				ViewData["blockId"] = blockId;
+				return View();
+			}
+			else
+			{
+				_notyf.Error("Ошибка");
+				return Redirect("javascript: history.go(-1)");
+			}
 		}
 		[HttpPost]
 		public async Task AddNewEvent(string blockId, string name, string text, string place, 
@@ -93,78 +137,88 @@ namespace ElectronicBoard.Controllers
 			{
 				try
 				{
-					// Изображение
-					byte[] picture = new byte[] { };
-					if (pict != null)
+					Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+					if (find_block != null)
 					{
-						using (var target = new MemoryStream())
+						// Изображение
+						byte[] picture = new byte[] { };
+						if (pict != null)
 						{
-							await pict.CopyToAsync(target);
-							picture = target.ToArray();
+							using (var target = new MemoryStream())
+							{
+								await pict.CopyToAsync(target);
+								picture = target.ToArray();
+							}
 						}
-					}
 
-					int BlockId = Convert.ToInt32(blockId);
+						int BlockId = Convert.ToInt32(blockId);
 
-					DateTime DateStart = DateTime.ParseExact(datestart, "yyyy-M-dd", null);
-					DateTime DateFinish = DateTime.ParseExact(datefinish, "yyyy-M-dd", null);
-					DateTime DateFinishArticle = DateTime.ParseExact(datefinisharticle, "yyyy-M-dd", null);
+						DateTime DateStart = DateTime.ParseExact(datestart, "yyyy-M-dd", null);
+						DateTime DateFinish = DateTime.ParseExact(datefinish, "yyyy-M-dd", null);
+						DateTime DateFinishArticle = DateTime.ParseExact(datefinisharticle, "yyyy-M-dd", null);
 
-					if (DateStart <= DateFinish && DateFinishArticle <= DateFinish)
-					{
-						// Добавление мероприятия
-						await eventService.Insert(new Event { 
-							EventName = name, 
-							EventText = text, 
-							EventPlace = place,
-
-							Picture = picture,
-
-							EventDateStart = DateStart,
-							EventDateFinish = DateFinish,
-							EventDateFinishArticle = DateFinishArticle,
-							
-							EventStartColor = datestartcolor,
-							EventFinishColor = datefinishcolor,
-							EventFinishArticleColor = datefinisharticlecolor
-						});
-						Event new_event = await eventService.GetElement(new Event
+						if (DateStart <= DateFinish && DateFinishArticle <= DateFinish)
 						{
-							EventName = name
-						});
+							// Добавление мероприятия
+							await eventService.Insert(new Event
+							{
+								EventName = name,
+								EventText = text,
+								EventPlace = place,
 
-						// Добавление мероприятия в блок и отображение мероприятия
-						await blockService.AddOrRemoveElement(new_event, BlockId);
-						Response.Redirect($"/event/index?" +
-							$"eventId={new_event.Id}" +
-							$"&blockId={BlockId}");
-					}
-					else if (DateStart > DateFinish)
-					{
-						_notyf.Error("Дата начала должна быть раньше даты окончания.");
-						Response.Redirect($"/event/addnewevent?blockId=" + blockId);
-					}
-					else if (DateFinishArticle <= DateFinish)
-					{
-						_notyf.Error("Дата окончания приёма статей должна быть раньше, чем окончание мероприятия.");
-						Response.Redirect($"/event/addnewevent?blockId=" + blockId);
+								Picture = picture,
+
+								EventDateStart = DateStart,
+								EventDateFinish = DateFinish,
+								EventDateFinishArticle = DateFinishArticle,
+
+								EventStartColor = datestartcolor,
+								EventFinishColor = datefinishcolor,
+								EventFinishArticleColor = datefinisharticlecolor
+							});
+							Event new_event = await eventService.GetElement(new Event
+							{
+								EventName = name
+							});
+
+							// Добавление мероприятия в блок и отображение мероприятия
+							await blockService.AddOrRemoveElement(new_event, BlockId);
+							Response.Redirect($"/event/index?" +
+								$"eventId={idn.GetAscii(new_event.Id.ToString())}" +
+								$"&blockId={idn.GetAscii(BlockId.ToString())}");
+						}
+						else if (DateStart > DateFinish)
+						{
+							_notyf.Error("Дата начала должна быть раньше даты окончания");
+							Response.Redirect($"/event/addnewevent?blockId=" + idn.GetAscii(blockId));
+						}
+						else if (DateFinishArticle <= DateFinish)
+						{
+							_notyf.Error("Дата окончания приёма статей должна быть раньше, чем окончание мероприятия");
+							Response.Redirect($"/event/addnewevent?blockId=" + idn.GetAscii(blockId));
+						}
+						else
+						{
+							_notyf.Error("Ошибка в указании дат");
+							Response.Redirect($"/event/addnewevent?blockId=" + idn.GetAscii(blockId));
+						}
 					}
 					else
 					{
-						_notyf.Error("Ошибка в указании дат.");
-						Response.Redirect($"/event/addnewevent?blockId=" + blockId);
+						_notyf.Error("Ошибка");
+						Response.Redirect("javascript: history.go(-1)");
 					}
 				}
 				catch (Exception ex)
 				{
 					_notyf.Error(ex.Message);
-					Response.Redirect($"/event/addnewevent?blockId=" + blockId);
+					Response.Redirect($"/event/addnewevent?blockId=" + idn.GetAscii(blockId));
 				}				
 			}
 			else
 			{
 				_notyf.Error("Заполните все поля");
-				Response.Redirect($"/event/addnewevent?blockId=" + blockId);
+				Response.Redirect($"/event/addnewevent?blockId=" + idn.GetAscii(blockId));
 			}
 		}
 
@@ -172,27 +226,43 @@ namespace ElectronicBoard.Controllers
 		[HttpGet]
 		public async Task<IActionResult> AddEvent(string blockId)
 		{
+			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+			ViewBag.ActivePart = activeUser;
+
+			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+			ViewBag.ActiveBoards = activeBoards;
+
 			int BlockId = Convert.ToInt32(blockId);
-			// Передача id блока, на котором будет находиться мероприятие
-			ViewData["blockId"] = blockId;
 
-			// Передача мероприятий, которые можно добавить в блок (id - значения)
-			List<Event> all_events = await eventService.GetFullList();
-			List<Event> block_events = await eventService.GetFilteredList(null, BlockId);
-
-			List<Event> events_for_adds = new List<Event>();
-			foreach (var ev in all_events) 
+			Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+			if (find_block != null)
 			{
-				bool add = true;
-				foreach (var block_ev in block_events) 
-				{
-					if (ev.Id == block_ev.Id) add = false;
-				}
-				if (add) { events_for_adds.Add(ev); }
-			}
-			ViewBag.Events = events_for_adds;
+				// Передача id блока, на котором будет находиться мероприятие
+				ViewData["blockId"] = blockId;
 
-			return View();
+				// Передача мероприятий, которые можно добавить в блок (id - значения)
+				List<Event> all_events = await eventService.GetFullList();
+				List<Event> block_events = await eventService.GetFilteredList(null, BlockId);
+
+				List<Event> events_for_adds = new List<Event>();
+				foreach (var ev in all_events)
+				{
+					bool add = true;
+					foreach (var block_ev in block_events)
+					{
+						if (ev.Id == block_ev.Id) add = false;
+					}
+					if (add) { events_for_adds.Add(ev); }
+				}
+				ViewBag.Events = events_for_adds;
+				return View();
+			}
+			else
+			{
+				_notyf.Error("Ошибка");
+				return Redirect("javascript: history.go(-1)");
+			}
 		}
 		[HttpPost]
 		public async Task AddEvent(string blockId, string eventId)
@@ -209,18 +279,18 @@ namespace ElectronicBoard.Controllers
 				try
 				{
 					await blockService.AddOrRemoveElement(find_event, find_block.Id);
-					Response.Redirect($"/block/index?Id=" + blockId);
+					Response.Redirect($"/block/index?Id=" + idn.GetAscii(blockId));
 				}
 				catch (Exception ex)
 				{
 					_notyf.Error(ex.Message);
-					Response.Redirect($"/event/addevent?blockId=" + blockId);
+					Response.Redirect($"/event/addevent?blockId=" + idn.GetAscii(blockId));
 				}
 			}
 			else 
 			{
 				_notyf.Error("Выберите мероприятие");
-				Response.Redirect($"/event/addevent?blockId=" + blockId);
+				Response.Redirect($"/event/addevent?blockId=" + idn.GetAscii(blockId));
 			}
 		}
 
@@ -228,16 +298,26 @@ namespace ElectronicBoard.Controllers
 		[HttpGet]
 		public async Task<IActionResult> UpdEvent(string eventId, string blockId)
 		{
-			int EventId = Convert.ToInt32(eventId);
-			int BlockId = Convert.ToInt32(blockId);
+			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+			ViewBag.ActivePart = activeUser;
 
-			Event find_event = await eventService.GetElement(new Event { Id = EventId });
+			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+			ViewBag.ActiveBoards = activeBoards;
 
-			// Блок, на котором находится элемент
-			Block find_block = await blockService.GetElement(new Block { Id = BlockId });
-			ViewData["blockId"] = find_block.Id;
+			Event find_event = await eventService.GetElement(new Event { Id = Convert.ToInt32(eventId) });
+			Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
 
-			return View(find_event);
+			if (find_block != null && find_event != null)
+			{
+				ViewData["blockId"] = find_block.Id;
+				return View(find_event);
+			}
+			else
+			{
+				_notyf.Error("Ошибка");
+				return Redirect("javascript: history.go(-1)");
+			}
 		}
 		[HttpPost]
 		public async Task UpdEvent(string id, string blockId, string name, string text, string place,
@@ -252,105 +332,113 @@ namespace ElectronicBoard.Controllers
 			{
 				try
 				{
-					int Id = Convert.ToInt32(id);
-					int BlockId = Convert.ToInt32(blockId);
+					Event find_event = await eventService.GetElement(new Event { Id = Convert.ToInt32(id) });
+					Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
 
-					// Изображение
-					bool del = true;
-					switch (delpic)
+					if(find_event != null && find_block != null) 
 					{
-						case "on":
-							del = true;
-							break;
-						case null:
-							del = false;
-							break;
-					}
-					byte[] picture = new byte[] { };
-					if (pict != null)
-					{
-						using (var target = new MemoryStream())
+						// Изображение
+						bool del = true;
+						switch (delpic)
 						{
-							await pict.CopyToAsync(target);
-							picture = target.ToArray();
+							case "on":
+								del = true;
+								break;
+							case null:
+								del = false;
+								break;
+						}
+						byte[] picture = new byte[] { };
+						if (pict != null)
+						{
+							using (var target = new MemoryStream())
+							{
+								await pict.CopyToAsync(target);
+								picture = target.ToArray();
+							}
+						}
+						else if (!del)
+						{
+							picture = (await eventService.GetElement(new Event { Id = find_event.Id })).Picture;
+						}
+
+						DateTime DateStart = DateTime.ParseExact(datestart, "yyyy-M-dd", null);
+						DateTime DateFinish = DateTime.ParseExact(datefinish, "yyyy-M-dd", null);
+						DateTime DateFinishArticle = DateTime.ParseExact(datefinisharticle, "yyyy-M-dd", null);
+
+						if (DateStart <= DateFinish && DateFinishArticle <= DateFinish)
+						{
+							// Редактирование мероприятия
+							await eventService.Update(new Event
+							{
+								Id = find_event.Id,
+								EventName = name,
+								EventText = text,
+								EventPlace = place,
+
+								Picture = picture,
+
+								EventDateStart = DateStart,
+								EventDateFinish = DateFinish,
+								EventDateFinishArticle = DateFinishArticle,
+
+								EventStartColor = datestartcolor,
+								EventFinishColor = datefinishcolor,
+								EventFinishArticleColor = datefinisharticlecolor
+
+							});
+							Event this_event = await eventService.GetElement(new Event
+							{
+								EventName = name
+							});
+
+							// Отображение мероприятия
+							Response.Redirect($"/event/index?" +
+								$"eventId={idn.GetAscii(this_event.Id.ToString())}" +
+								$"&blockId={idn.GetAscii(find_block.Id.ToString())}");
+						}
+						else if (DateStart > DateFinish)
+						{
+							_notyf.Error("Дата начала должна быть раньше даты окончания.");
+							Response.Redirect($"/event/updevent?" +
+							$"Id={idn.GetAscii(id)}" +
+							$"EventName={idn.GetAscii(name)}");
+						}
+						else if (DateFinishArticle <= DateFinish)
+						{
+							_notyf.Error("Дата окончания приёма статей должна быть раньше, чем окончание мероприятия.");
+							Response.Redirect($"/event/updevent?" +
+							$"Id={idn.GetAscii(id)}" +
+							$"EventName={idn.GetAscii(name)}");
+						}
+						else
+						{
+							_notyf.Error("Ошибка в указании дат.");
+							Response.Redirect($"/event/updevent?" +
+							$"Id={idn.GetAscii(id)}" +
+							$"EventName={idn.GetAscii(name)}");
 						}
 					}
-					else if (!del)
+					else
 					{
-						picture = (await eventService.GetElement(new Event { Id = Id })).Picture;
+						_notyf.Error("Ошибка");
+						Response.Redirect("javascript: history.go(-1)");
 					}
-
-					DateTime DateStart = DateTime.ParseExact(datestart, "yyyy-M-dd", null);
-					DateTime DateFinish = DateTime.ParseExact(datefinish, "yyyy-M-dd", null);
-					DateTime DateFinishArticle = DateTime.ParseExact(datefinisharticle, "yyyy-M-dd", null);
-
-					if (DateStart <= DateFinish && DateFinishArticle <= DateFinish)
-					{
-						// Редактирование мероприятия
-						await eventService.Update(new Event
-						{
-							Id = Id,
-							EventName = name,
-							EventText = text,
-							EventPlace = place,
-
-							Picture = picture,
-
-							EventDateStart = DateStart,
-							EventDateFinish = DateFinish,
-							EventDateFinishArticle = DateFinishArticle,
-
-							EventStartColor = datestartcolor,
-							EventFinishColor = datefinishcolor,
-							EventFinishArticleColor = datefinisharticlecolor
-
-						});
-						Event this_event = await eventService.GetElement(new Event
-						{
-							EventName = name
-						});
-
-						// Отображение мероприятия
-						Response.Redirect($"/event/index?" +
-							$"eventId={this_event.Id}" +
-							$"&blockId={BlockId}");
-					}
-					else if (DateStart > DateFinish)
-					{
-						_notyf.Error("Дата начала должна быть раньше даты окончания.");
-						Response.Redirect($"/event/updevent?" +
-						$"Id={id}" +
-						$"EventName={name}");
-					}
-                    else if (DateFinishArticle <= DateFinish)
-                    {
-						_notyf.Error("Дата окончания приёма статей должна быть раньше, чем окончание мероприятия.");
-						Response.Redirect($"/event/updevent?" +
-						$"Id={id}" +
-						$"EventName={name}");
-					}
-					else 
-					{
-						_notyf.Error("Ошибка в указании дат.");
-						Response.Redirect($"/event/updevent?" +
-						$"Id={id}" +
-						$"EventName={name}");
-					}
-                }
+				}
 				catch (Exception ex)
 				{
 					_notyf.Error(ex.Message);
 					Response.Redirect($"/event/updevent?" +
-						$"Id={id}" +
-						$"EventName={name}");
+					$"Id={idn.GetAscii(id)}" +
+					$"EventName={idn.GetAscii(name)}");
 				}
 			}
 			else
 			{
 				_notyf.Error("Заполните все поля");
 				Response.Redirect($"/event/updevent?" +
-							$"Id={id}" +
-							$"EventName={name}");
+				$"Id={idn.GetAscii(id)}" +
+				$"EventName={idn.GetAscii(name)}");
 			}
 		}
 
@@ -360,33 +448,36 @@ namespace ElectronicBoard.Controllers
 		{
 			if (!string.IsNullOrEmpty(eventId) && !string.IsNullOrEmpty(blockId))
 			{
-				int block_id;
-				int event_id;
-				bool isNumeric_blockId = int.TryParse(blockId, out block_id);
-				bool isNumeric_eventId = int.TryParse(eventId, out event_id);
-				if (isNumeric_blockId && isNumeric_eventId)
+				Event find_event = await eventService.GetElement(new Event { Id = Convert.ToInt32(eventId) });
+				Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				if (find_event != null && find_block != null)
 				{
 					try
 					{
-						Event ev = await eventService.GetElement(new Event { Id = event_id });
-						Block bl = await blockService.GetElement(new Block { Id = block_id });
+						Event ev = await eventService.GetElement(new Event { Id = find_event.Id });
+						Block bl = await blockService.GetElement(new Block { Id = find_block.Id });
 						if (ev != null && bl != null) 
 						{
-							await blockService.AddOrRemoveElement(ev, block_id);
-							Response.Redirect($"/block/index?Id=" + block_id);
+							await blockService.AddOrRemoveElement(ev, find_block.Id);
+							Response.Redirect($"/block/index?Id=" + idn.GetAscii(find_block.Id.ToString()));
 						}
 					}
 					catch (Exception ex)
 					{
 						_notyf.Error(ex.Message);
-						Response.Redirect($"/event/index?eventId=" + eventId + "&blockId=" + blockId);
+						Response.Redirect($"/event/index?eventId=" + idn.GetAscii(eventId) + "&blockId=" + idn.GetAscii(blockId));
 					}
 				}
 				else
 				{
 					_notyf.Error("Элемент не найден");
-					Response.Redirect($"/event/index?eventId=" + eventId + "&blockId=" + blockId);
+					Response.Redirect($"/event/index?eventId=" + idn.GetAscii(eventId) + "&blockId=" + idn.GetAscii(blockId));
 				}
+			}
+			else
+			{
+				_notyf.Error("Ошибка");
+				Response.Redirect("javascript: history.go(-1)");
 			}
 		}
 
@@ -396,34 +487,37 @@ namespace ElectronicBoard.Controllers
 		{
 			if (!string.IsNullOrEmpty(eventId) && !string.IsNullOrEmpty(blockId))
 			{
-				int block_id;
-				int event_id;
-				bool isNumeric_blockId = int.TryParse(blockId, out block_id);
-				bool isNumeric_eventId = int.TryParse(eventId, out event_id);
-				if (isNumeric_blockId && isNumeric_eventId)
+				Event find_event = await eventService.GetElement(new Event { Id = Convert.ToInt32(eventId) });
+				Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				if (find_event != null && find_block != null)
 				{
 					try
 					{
-						Event ev = await eventService.GetElement(new Event { Id = event_id });
-						Block bl = await blockService.GetElement(new Block { Id = block_id });
+						Event ev = await eventService.GetElement(new Event { Id = find_event.Id });
+						Block bl = await blockService.GetElement(new Block { Id = find_block.Id });
 						if (ev != null && bl != null)
 						{
-							await blockService.AddOrRemoveElement(ev, block_id);
-							await eventService.Delete(new Event { Id = event_id });
-							Response.Redirect($"/block/index?Id=" + block_id);
+							await blockService.AddOrRemoveElement(ev, find_block.Id);
+							await eventService.Delete(new Event { Id = find_event.Id });
+							Response.Redirect($"/block/index?Id=" + idn.GetAscii(find_block.Id.ToString()));
 						}
 					}
 					catch (Exception ex)
 					{
 						_notyf.Error(ex.Message);
-						Response.Redirect($"/event/index?eventId=" + eventId + "&blockId=" + blockId);
+						Response.Redirect($"/event/index?eventId=" + idn.GetAscii(eventId) + "&blockId=" + idn.GetAscii(blockId));
 					}
 				}
 				else
 				{
 					_notyf.Error("Элемент не найден");
-					Response.Redirect($"/event/index?eventId=" + eventId + "&blockId=" + blockId);
+					Response.Redirect($"/event/index?eventId=" + idn.GetAscii(eventId) + "&blockId=" + idn.GetAscii(blockId));
 				}
+			}
+			else
+			{
+				_notyf.Error("Ошибка");
+				Response.Redirect("javascript: history.go(-1)");
 			}
 		}
 	}

@@ -1,8 +1,4 @@
-﻿@{
-	List<Board> boards = Program.Boards;
-	Participant part = Program.Participant;
-}
-<!DOCTYPE HTML>
+﻿<!DOCTYPE HTML>
 <html>
 	<head>
 		@await Html.PartialAsync("MetatagsPartial")
@@ -12,14 +8,14 @@
 		<!-- Nav -->
 		<nav id="nav">
 			<ul>
-			@if (boards != null)
+			@if (ViewBag.ActiveBoards != null)
 			{
 				<li class="current"><a href="/board/index?BoardName=Общая%20доска" class="logo"><strong>Главная</strong></a></li>
 				<li>
 					<a>Доски</a>
 					<ul>
 
-						@foreach (var board in boards)
+						@foreach (var board in ViewBag.ActiveBoards)
 						{
 							<li>
 								<a href="/board/index?Id=@board.Id&BoardName=@board.BoardName&BoardThematics=@board.BoardThematics">
@@ -30,21 +26,23 @@
 						<li class="pom"><a href="/board/addboard"><strong>Создать доску</strong></a></li>
 					</ul>
 				</li>
-
 			}
-			@if(part != null)
+			@if(ViewBag.ActivePart != null)
 			{
-				<li style="float: right"><a href="/participant/profile?partId=@part.Id">Профиль</a></li>
+				<li style="float: right">
+					<a>@ViewBag.ActivePart.Login</a>
+					<ul>
+						<li><a href="/participant/profile?partId=@ViewBag.ActivePart.Id">Профиль</a></li>
+						<li><a href="/participant/logout">Выход</a></li>
+					</ul>
+				</li>
 			}
 		</ul>
-
 		</nav>
-
 		<!-- Wrapper -->
 		<div id="wrapper">
 			@RenderBody()
 		</div>
-
 		@await Html.PartialAsync("ScriptsPartial")
 		@await Component.InvokeAsync("Notyf")
 		@RenderSection("Scripts", required: false)

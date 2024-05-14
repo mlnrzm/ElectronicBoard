@@ -1,7 +1,6 @@
 ﻿@model Board
 @{
 	ViewData["Title"] = "Home Page";
-	Participant part = Program.Participant;
 }
 
 <!-- Main -->
@@ -13,8 +12,6 @@
 			<header class="main">
 				<h1>@Model.BoardName</h1>
 			</header>
-
-			<!-- Content -->
 			<p>@Model.BoardThematics</p>
 		</section>
 
@@ -43,9 +40,10 @@
 			</ul>
 		</section>
 		<ul class="actions">
-			<li><a href="/board/exitboard?boardId=@Model.Id&partId=@part.Id">Покинуть доску</a></li>
+			<li><a href="/board/exitboard?boardId=@Model.Id&partId=@ViewBag.ActivePart.Id">Покинуть доску</a></li>
 		</ul>
 	</div>
+	<div style="height: 18%"></div>
 </div>
 
 <!-- Sidebar -->

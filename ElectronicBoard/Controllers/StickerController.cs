@@ -1,7 +1,7 @@
 ﻿using AspNetCoreHero.ToastNotification.Abstractions;
 using ElectronicBoard.Models;
 using ElectronicBoard.Services.ServiceContracts;
-using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ElectronicBoard.Controllers
@@ -11,8 +11,9 @@ namespace ElectronicBoard.Controllers
 		private readonly ILogger<StickerController> _logger;
 		private readonly INotyfService _notyf;
 
-		private readonly IStickerService stickerService;
+		private readonly UserManager<IdentityUser<int>> _userManager;
 
+		private readonly IStickerService stickerService;
 		private readonly IProjectService projectService;
 		private readonly ISimpleElementService elementService;
 		private readonly IEventService eventService;
@@ -25,7 +26,7 @@ namespace ElectronicBoard.Controllers
 		public StickerController(ILogger<StickerController> logger, INotyfService notyf, 
 			IProjectService _projectService, ISimpleElementService _elementService, 
 			IEventService _eventService, IParticipantService _participantService, IGrantService _grantService,
-			IBlockService _blockService, IBoardService _boardService, IStickerService _stickerService)
+			IBlockService _blockService, IBoardService _boardService, IStickerService _stickerService, UserManager<IdentityUser<int>> userManager)
 		{
 			_logger = logger;
 			_notyf = notyf;
@@ -37,13 +38,21 @@ namespace ElectronicBoard.Controllers
 			participantService = _participantService;
 			grantService = _grantService;
 			stickerService = _stickerService;
+			_userManager = userManager;
 		}
 
 		// Добавление стикера
 		[HttpGet]
-		public IActionResult AddSticker(string blockId, 
+		public async Task<IActionResult> AddSticker(string blockId, 
 			string projectId, string elementId, string eventId, string partId, string grantId)
 		{
+			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+			ViewBag.ActivePart = activeUser;
+
+			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+			ViewBag.ActiveBoards = activeBoards;
+
 			if (string.IsNullOrEmpty(projectId) && string.IsNullOrEmpty(elementId) && string.IsNullOrEmpty(eventId)
 				&& string.IsNullOrEmpty(partId) && string.IsNullOrEmpty(grantId)) 
 			{
@@ -139,6 +148,13 @@ namespace ElectronicBoard.Controllers
 		public async Task<IActionResult> UpdSticker(string id, string blockId,
 			string projectId, string elementId, string eventId, string partId, string grantId)
 		{
+			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+			ViewBag.ActivePart = activeUser;
+
+			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+			ViewBag.ActiveBoards = activeBoards;
+
 			int StickerId = Convert.ToInt32(id);
 			Sticker find_sticker = await stickerService.GetElement(new Sticker
 			{

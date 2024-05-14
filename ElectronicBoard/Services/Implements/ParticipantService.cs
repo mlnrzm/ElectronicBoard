@@ -1,8 +1,9 @@
-﻿using Azure;
+﻿using AspNetCore;
 using ElectronicBoard.Models;
 using ElectronicBoard.Services.ServiceContracts;
-using HtmlAgilityPack;
 using Microsoft.EntityFrameworkCore;
+using Novell.Directory.Ldap;
+using System.Globalization;
 using System.Net;
 
 namespace ElectronicBoard.Services.Implements
@@ -17,7 +18,7 @@ namespace ElectronicBoard.Services.Implements
 		private IBoardService boardService { get; set; }
 		private IStickerService stickerService { get; set; }
 
-        public ParticipantService(IAuthorService _authorService, 
+		public ParticipantService(IAuthorService _authorService, 
             IFileService _fileService, IStickerService _stickerService, 
             IBlockService _blockService, IBoardService _boardService)
         {
@@ -26,11 +27,10 @@ namespace ElectronicBoard.Services.Implements
             stickerService = _stickerService;
             blockService = _blockService;
             boardService = _boardService;
-            CreateTestParticipant();
-        }
+		}
 
-        // Получение всего списка участников
-        public async Task<List<Participant>> GetFullList()
+		// Получение всего списка участников
+		public async Task<List<Participant>> GetFullList()
         {
             using var context = new ElectronicBoardDatabase();
             return (await context.Participants.ToListAsync())
@@ -78,7 +78,7 @@ namespace ElectronicBoard.Services.Implements
             }
             using var context = new ElectronicBoardDatabase();
             var component = await context.Participants
-            .FirstOrDefaultAsync(rec => rec.ParticipantFIO.Contains(model.ParticipantFIO) || rec.Id == model.Id);
+            .FirstOrDefaultAsync(rec => rec.IdentityId == model.IdentityId || rec.ParticipantFIO.Contains(model.ParticipantFIO) || rec.Id == model.Id);
             return component != null ? CreateModel(component) : null;
         }
 
@@ -102,8 +102,7 @@ namespace ElectronicBoard.Services.Implements
             if (Program.MainBoard == null)
 			Program.MainBoard = await boardService.GetElement(new Board
 			{
-				BoardName = "Общая доска",
-				BoardThematics = "Общая"
+				BoardName = "Общая доска"
 			});
 
 			int main_block_id = (await blockService.GetElement(new Block { BoardId = Program.MainBoard.Id })).Id;
@@ -188,24 +187,15 @@ namespace ElectronicBoard.Services.Implements
             }
         }
 
-        private async Task CreateTestParticipant() 
+        public async Task CreateTestParticipant(Participant participant) 
         {
 			/// Участник досок для тестирования приложения ///
 			List<Participant> participants = await GetFullList();
-
+			
 			if (participants.Count == 0)
 			{
 				using var context = new ElectronicBoardDatabase();
-				await context.Participants.AddAsync(CreateModel(new Participant
-				{
-					ParticipantFIO = "Проверяющий",
-					ParticipantPatents = "нет",
-					ParticipantPublications = "нет",
-					ParticipantRating = XHirsh("Проверяющий"),
-					ParticipantTasks = "нет",
-					ScientificInterests = "нет",
-					Picture = new byte[] { }
-				}, new Participant()));
+				await context.Participants.AddAsync(CreateModel(participant, new Participant()));
 				await context.SaveChangesAsync();
 			}
 
@@ -213,8 +203,10 @@ namespace ElectronicBoard.Services.Implements
 			{
 				ParticipantFIO = "Проверяющий"
 			});
+
             await boardService.CreateMainBoard(part);
 		}
+
         private static Participant CreateModel(Participant model, Participant participant)
         {
             participant.ParticipantFIO = model.ParticipantFIO;
@@ -228,6 +220,10 @@ namespace ElectronicBoard.Services.Implements
             participant.Picture = model.Picture;
             participant.Stikers = model.Stikers;
             participant.ParticipantsBlocks = model.ParticipantsBlocks;
+
+            participant.IdentityId = model.IdentityId;
+            participant.Login = model.Login;
+            participant.Password = model.Password;
 
             return participant;
         }
@@ -247,7 +243,11 @@ namespace ElectronicBoard.Services.Implements
                 Files = participant.Files,
                 Picture = participant.Picture,
                 Stikers = participant.Stikers,
-                ParticipantsBlocks = participant.ParticipantsBlocks
+                ParticipantsBlocks = participant.ParticipantsBlocks,
+
+                IdentityId = participant.IdentityId,
+                Login = participant.Login,
+                Password = participant.Password
             };
         }
 		private static int XHirsh(string ParticipantFIO)
