@@ -1,17 +1,15 @@
-﻿using AspNetCore;
-using ElectronicBoard.Models;
+﻿using ElectronicBoard.Models;
 using ElectronicBoard.Services.ServiceContracts;
 using Microsoft.EntityFrameworkCore;
-using Novell.Directory.Ldap;
-using System.Globalization;
 using System.Net;
 
 namespace ElectronicBoard.Services.Implements
 {
-    public class ParticipantService : IParticipantService
+	/// <summary>
+	/// Класс для взаимодействия с сущностью "Участник"
+	/// </summary>
+	public class ParticipantService : IParticipantService
     {
-		// ДОБАВИТЬ Метод авторизации
-		// ПОЛУЧЕНИЕ ПОЛЬЗОВАТЕЛЯ ДЛЯ ВХОДА
 		private IAuthorService authorService { get; set; }
 		private IFileService fileService { get; set; }
 		private IBlockService blockService { get; set; }
@@ -29,7 +27,12 @@ namespace ElectronicBoard.Services.Implements
             boardService = _boardService;
 		}
 
-		// Получение всего списка участников
+		public ParticipantService() {}
+
+		/// <summary>
+		/// Метод для получения списка участников
+		/// </summary>
+		/// <returns></returns>
 		public async Task<List<Participant>> GetFullList()
         {
             using var context = new ElectronicBoardDatabase();
@@ -38,39 +41,54 @@ namespace ElectronicBoard.Services.Implements
             .ToList();
         }
 
-        // Получение участников по имени или id блока
-        public async Task<List<Participant>> GetFilteredList(Participant? model, int? blockId)
-        {
-            List<Participant> participants = new List<Participant>();
-            using var context = new ElectronicBoardDatabase();
-            if (model == null && blockId == null)
-            {
-                return null;
-            }
-            else if (blockId != null)
-            {
-                var block_parts = (await context.BlockParticipants.ToListAsync()).Where(rec => rec.BlockId == blockId);
-                if (block_parts != null)
-                {
-                    foreach (var block_part in block_parts)
-                    {
-                        var participant = await context.Participants.FirstOrDefaultAsync(rec => rec.Id == block_part.ParticipantId);
-                        if (participant != null) participants.Add(participant);
-                    }
-                }
-                return participants;
-            }
-            else
-            {
-                return (await context.Participants.ToListAsync())
-                .Where(rec => rec.ParticipantFIO.Contains(model.ParticipantFIO))
-                .Select(CreateModel)
-                .ToList();
-            }
-        }
+		/// <summary>
+		/// Метод для получения участников по Id блока
+		/// </summary>
+		/// <param name="blockId"></param>
+		/// <returns></returns>
+		public async Task<List<Participant>> GetFilteredList(int? blockId)
+		{
+			List<Participant> participants = new List<Participant>();
+			using var context = new ElectronicBoardDatabase();
+			if (blockId == null)
+			{
+				return new List<Participant>();
+			}
+			else
+			{
+				var block_parts = (await context.BlockParticipants.ToListAsync()).Where(rec => rec.BlockId == blockId);
+				if (block_parts != null)
+				{
+					foreach (var block_part in block_parts)
+					{
+						var participant = await context.Participants.FirstOrDefaultAsync(rec => rec.Id == block_part.ParticipantId);
+						if (participant != null) participants.Add(participant);
+					}
+				}
+				return participants;
+			}
+		}
 
-        // Получение участника по id или ФИО
-        public async Task<Participant> GetElement(Participant model)
+		/// <summary>
+		/// Метод для проверки логина/пароля участника
+		/// </summary>
+		/// <param name="login"></param>
+		/// <param name="password"></param>
+		/// <returns></returns>
+		public async Task<Participant?> Enter(string login, string password)
+		{
+			using var context = new ElectronicBoardDatabase();
+			var component = await context.Participants
+			.FirstOrDefaultAsync(rec => rec.ParticipantFIO.Contains(login));
+			return component != null ? CreateModel(component) : null;
+		}
+
+		/// <summary>
+		/// Метод для получения участника по Id или ФИО
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task<Participant?> GetElement(Participant model)
         {
             if (model == null)
             {
@@ -82,35 +100,37 @@ namespace ElectronicBoard.Services.Implements
             return component != null ? CreateModel(component) : null;
         }
 
-        // ПОЛУЧЕНИЕ ПОЛЬЗОВАТЕЛЯ ДЛЯ ВХОДА
-		public async Task<Participant> Enter(string login, string password)
-		{
-			using var context = new ElectronicBoardDatabase();
-			var component = await context.Participants
-			.FirstOrDefaultAsync(rec => rec.ParticipantFIO.Contains(login));
-			return component != null ? CreateModel(component) : null;
-		}
-
-		// Добавление участника
+		/// <summary>
+		/// Метод для добавления участника
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public async Task Insert(Participant model)
         {
             using var context = new ElectronicBoardDatabase();
             await context.Participants.AddAsync(CreateModel(model, new Participant()));
             await context.SaveChangesAsync();
 
-			// Добавление участника к общей доске
-            if (Program.MainBoard == null)
-			Program.MainBoard = await boardService.GetElement(new Board
+            var main_board = await boardService.GetElement(new Board
 			{
 				BoardName = "Общая доска"
 			});
 
-			int main_block_id = (await blockService.GetElement(new Block { BoardId = Program.MainBoard.Id })).Id;
-            await blockService.AddOrRemoveElement(await GetElement(model), main_block_id);
+            // Добавление участника к общей доске
+            if (Program.MainBoard == null && main_board != null)
+                Program.MainBoard = main_board;
+
+            Block? main_block = await blockService.GetElement(new Block { BoardId = Program.MainBoard.Id });
+
+			if (main_block != null) await blockService.AddOrRemoveElement(await GetElement(model), main_block.Id);
         }
 
-        // Редактирование данных об участнике
-        public async Task Update(Participant model)
+		/// <summary>
+		/// Метод для редактирования участника
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Update(Participant model)
         {
             using var context = new ElectronicBoardDatabase();
             var element = await context.Participants.FirstOrDefaultAsync(rec => rec.Id == model.Id);
@@ -122,8 +142,12 @@ namespace ElectronicBoard.Services.Implements
             await context.SaveChangesAsync();
         }
 
-        // Удаление участника
-        public async Task Delete(Participant model)
+		/// <summary>
+		/// Метод для удаления участника
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Delete(Participant model)
         {
             using var context = new ElectronicBoardDatabase();
 
@@ -187,9 +211,13 @@ namespace ElectronicBoard.Services.Implements
             }
         }
 
-        public async Task CreateTestParticipant(Participant participant) 
+		/// <summary>
+		/// Метод для создания тестового участника
+		/// </summary>
+		/// <param name="participant"></param>
+		/// <returns></returns>
+		public async Task CreateTestParticipant(Participant participant) 
         {
-			/// Участник досок для тестирования приложения ///
 			List<Participant> participants = await GetFullList();
 			
 			if (participants.Count == 0)
@@ -199,57 +227,18 @@ namespace ElectronicBoard.Services.Implements
 				await context.SaveChangesAsync();
 			}
 
-			Participant part = await GetElement(new Participant
+			Participant? part = await GetElement(new Participant
 			{
-				ParticipantFIO = "Проверяющий"
+				ParticipantFIO = participant.ParticipantFIO
 			});
-
-            await boardService.CreateMainBoard(part);
+            if (part != null) await boardService.CreateMainBoard(part);
 		}
 
-        private static Participant CreateModel(Participant model, Participant participant)
-        {
-            participant.ParticipantFIO = model.ParticipantFIO;
-            participant.ParticipantTasks = model.ParticipantTasks;
-            participant.ScientificInterests = model.ScientificInterests;
-
-            participant.ParticipantPublications = model.ParticipantPublications;
-            participant.ParticipantRating = XHirsh(model.ParticipantFIO);
-            participant.ParticipantPatents = model.ParticipantPatents;
-            participant.Files = model.Files;
-            participant.Picture = model.Picture;
-            participant.Stikers = model.Stikers;
-            participant.ParticipantsBlocks = model.ParticipantsBlocks;
-
-            participant.IdentityId = model.IdentityId;
-            participant.Login = model.Login;
-            participant.Password = model.Password;
-
-            return participant;
-        }
-        private static Participant CreateModel(Participant participant)
-        {
-            return new Participant
-            {
-                Id = participant.Id,
-
-                ParticipantFIO = participant.ParticipantFIO,
-                ParticipantTasks = participant.ParticipantTasks,
-                ScientificInterests = participant.ScientificInterests,
-
-                ParticipantPublications = participant.ParticipantPublications,
-                ParticipantRating = participant.ParticipantRating,
-                ParticipantPatents = participant.ParticipantPatents,
-                Files = participant.Files,
-                Picture = participant.Picture,
-                Stikers = participant.Stikers,
-                ParticipantsBlocks = participant.ParticipantsBlocks,
-
-                IdentityId = participant.IdentityId,
-                Login = participant.Login,
-                Password = participant.Password
-            };
-        }
+		/// <summary>
+		/// Метод для получения индекса Хирша
+		/// </summary>
+		/// <param name="ParticipantFIO"></param>
+		/// <returns></returns>
 		private static int XHirsh(string ParticipantFIO)
 		{
 			string path = "https://www.elibrary.ru/authors.asp?surname=" + ParticipantFIO + "&codetype=SPIN&codevalue=&town=Ульяновск&countryid=RUS&orgname=Ульяновский%20государственный%20технический%20университет&rubriccode=&metrics=1&sortorder=3&order=1";
@@ -309,6 +298,11 @@ namespace ElectronicBoard.Services.Implements
 			return indexH;
 		}
 
+		/// <summary>
+		/// Метод для обновления рейтинга
+		/// </summary>
+		/// <param name="partId"></param>
+		/// <returns></returns>
 		public async Task UpdRaiting(int partId)
 		{
 			using var context = new ElectronicBoardDatabase();
@@ -318,6 +312,50 @@ namespace ElectronicBoard.Services.Implements
 				throw new Exception("Участник не найден");
 			}
             await Update(element);
+		}
+
+		public Participant CreateModel(Participant model, Participant participant)
+		{
+			participant.ParticipantFIO = model.ParticipantFIO;
+			participant.ParticipantTasks = model.ParticipantTasks;
+			participant.ScientificInterests = model.ScientificInterests;
+
+			participant.ParticipantPublications = model.ParticipantPublications;
+			participant.ParticipantRating = XHirsh(model.ParticipantFIO);
+			participant.ParticipantPatents = model.ParticipantPatents;
+			participant.Files = model.Files;
+			participant.Picture = model.Picture;
+			participant.Stikers = model.Stikers;
+			participant.ParticipantsBlocks = model.ParticipantsBlocks;
+
+			participant.IdentityId = model.IdentityId;
+			participant.Login = model.Login;
+			participant.Password = model.Password;
+
+			return participant;
+		}
+		private static Participant CreateModel(Participant participant)
+		{
+			return new Participant
+			{
+				Id = participant.Id,
+
+				ParticipantFIO = participant.ParticipantFIO,
+				ParticipantTasks = participant.ParticipantTasks,
+				ScientificInterests = participant.ScientificInterests,
+
+				ParticipantPublications = participant.ParticipantPublications,
+				ParticipantRating = participant.ParticipantRating,
+				ParticipantPatents = participant.ParticipantPatents,
+				Files = participant.Files,
+				Picture = participant.Picture,
+				Stikers = participant.Stikers,
+				ParticipantsBlocks = participant.ParticipantsBlocks,
+
+				IdentityId = participant.IdentityId,
+				Login = participant.Login,
+				Password = participant.Password
+			};
 		}
 	}
 }

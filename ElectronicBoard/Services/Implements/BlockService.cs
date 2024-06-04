@@ -4,7 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ElectronicBoard.Services.Implements
 {
-    public class BlockService : IBlockService
+	/// <summary>
+	/// Класс для взаимодействия с сущностью "Блок"
+	/// </summary>
+	public class BlockService : IBlockService
     {
         private ISimpleElementService simpleElementService { get; set; }
 
@@ -13,70 +16,13 @@ namespace ElectronicBoard.Services.Implements
             simpleElementService = _simpleElementService;
         }
 
-        public async Task AddOrRemoveElement(Participant participant, int blockId)
-        {
-            using var context = new ElectronicBoardDatabase();
-            var part = await context.Participants.FirstOrDefaultAsync(rec => rec.Id == participant.Id);
-            var block = await context.Blocks.FirstOrDefaultAsync(rec => rec.Id == blockId);
+		public BlockService(){}
 
-            if (part != null && block != null)
-            {
-                var block_part = await context.BlockParticipants.FirstOrDefaultAsync(rec => rec.ParticipantId == part.Id && rec.BlockId == block.Id);
-                if (block_part == null)
-                {
-                    await context.BlockParticipants.AddAsync(new BlockParticipant
-                    {
-                        ParticipantId = participant.Id,
-                        BlockId = blockId
-                    });
-                    await context.SaveChangesAsync();
-                }
-                else
-                {
-					Board? board = await context.Boards.FirstOrDefaultAsync(rec => rec.Id == block.BoardId);
-
-                    if (board != null && board.BoardName.Contains("Общая доска"))
-                    {
-						throw new Exception("Покинуть общую доску невозможно");
-					}
-                    else 
-                    {
-						context.BlockParticipants.Remove(block_part);
-						await context.SaveChangesAsync();
-					}
-                }
-            }
-			else throw new Exception("Участник или блок не найдены");
-		}
-        public async Task AddOrRemoveElement(Event event_, int blockId)
-        {
-            using var context = new ElectronicBoardDatabase();
-            var ev = await context.Events.FirstOrDefaultAsync(rec => rec.Id == event_.Id);
-            var block = await context.Blocks.FirstOrDefaultAsync(rec => rec.Id == blockId);
-
-            if (ev != null && block != null)
-            {
-                var block_event = await context.BlockEvents.FirstOrDefaultAsync(rec => rec.EventId == ev.Id && rec.BlockId == block.Id);
-                if (block_event == null)
-                {
-                    await context.BlockEvents.AddAsync(new BlockEvent
-                    {
-                        EventId = ev.Id,
-                        BlockId = blockId
-                    });
-                    await context.SaveChangesAsync();
-                }
-                else
-                {
-                    context.BlockEvents.Remove(block_event);
-                    await context.SaveChangesAsync();
-                }
-            }
-            else throw new Exception("Мероприятие или блок не найдены");
-		}
-
-        // Получение всего списка блоков
-        public async Task<List<Block>> GetFullList()
+		/// <summary>
+		/// Метод для получения списка блоков
+		/// </summary>
+		/// <returns></returns>
+		public async Task<List<Block>> GetFullList()
         {
             using var context = new ElectronicBoardDatabase();
             return (await context.Blocks.ToListAsync())
@@ -84,12 +30,16 @@ namespace ElectronicBoard.Services.Implements
             .ToList();
         }
 
-        // Получение списка блоков по названию или id доски
-        public async Task<List<Block>> GetFilteredList(Block model)
+		/// <summary>
+		/// Метод для получения списка блоков (по Id доски)
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task<List<Block>> GetFilteredList(Block model)
         {
             if (model == null)
             {
-                return null;
+                return new List<Block>();
             }
             using var context = new ElectronicBoardDatabase();
             if(model.BlockName == null)
@@ -104,8 +54,12 @@ namespace ElectronicBoard.Services.Implements
             .ToList();
         }
 
-        // Получение блока по id или названию
-        public async Task<Block> GetElement(Block model)
+		/// <summary>
+		/// Метод для получения блока по Id или названию
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task<Block?> GetElement(Block model)
         {
             if (model == null)
             {
@@ -124,8 +78,12 @@ namespace ElectronicBoard.Services.Implements
 			return component != null ? CreateModel(component) : null;
 		}
 
-		// Добавление блока
-        public async Task Insert(Block model)
+		/// <summary>
+		/// Метод для добавления блока
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Insert(Block model)
         {
             using var context = new ElectronicBoardDatabase();
             if (await CheckBlockName(model)) 
@@ -136,8 +94,12 @@ namespace ElectronicBoard.Services.Implements
             else throw new Exception("Введённое наименование блока недопустимо");
 		}
 
-        // Редактирование данных о блоке
-        public async Task Update(Block model)
+		/// <summary>
+		/// Метод для редактирования блока
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Update(Block model)
         {
             using var context = new ElectronicBoardDatabase();
             var element = await context.Blocks.FirstOrDefaultAsync(rec => rec.Id == model.Id);
@@ -153,8 +115,12 @@ namespace ElectronicBoard.Services.Implements
 			else throw new Exception("Введённое наименование блока недопустимо");
         }
 
-        // Удаление блока + удаление элементов
-        public async Task Delete(Block model)
+		/// <summary>
+		/// Метод для удаления блока
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Delete(Block model)
         {
             using var context = new ElectronicBoardDatabase();
             using var transaction = await context.Database.BeginTransactionAsync();
@@ -198,8 +164,12 @@ namespace ElectronicBoard.Services.Implements
             }
         }
 
-        // Проверка имени добавляемого блока
-        private async Task<bool> CheckBlockName(Block model) 
+		/// <summary>
+		/// Метод для проверки имени блока
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		private async Task<bool> CheckBlockName(Block model) 
         {
 			using var context = new ElectronicBoardDatabase();
 
@@ -223,7 +193,87 @@ namespace ElectronicBoard.Services.Implements
             return true;
 		}
 
-		private static Block CreateModel(Block model, Block block)
+		/// <summary>
+		/// Метод для добавления/удаления участника из блока
+		/// </summary>
+		/// <param name="participant"></param>
+		/// <param name="blockId"></param>
+		/// <returns></returns>
+		public async Task AddOrRemoveElement(Participant participant, int blockId)
+		{
+			using var context = new ElectronicBoardDatabase();
+			var part = await context.Participants.FirstOrDefaultAsync(rec => rec.Id == participant.Id);
+			var block = await context.Blocks.FirstOrDefaultAsync(rec => rec.Id == blockId);
+
+			if (part != null && block != null)
+			{
+				var block_part = await context.BlockParticipants.FirstOrDefaultAsync(rec => rec.ParticipantId == part.Id && rec.BlockId == block.Id);
+				if (block_part == null)
+				{
+					await context.BlockParticipants.AddAsync(new BlockParticipant
+					{
+						ParticipantId = participant.Id,
+						BlockId = blockId
+					});
+					await context.SaveChangesAsync();
+				}
+				else
+				{
+					Board? board = await context.Boards.FirstOrDefaultAsync(rec => rec.Id == block.BoardId);
+
+					if (board != null && board.BoardName.Contains("Общая доска"))
+					{
+						throw new Exception("Покинуть общую доску невозможно");
+					}
+					else
+					{
+						context.BlockParticipants.Remove(block_part);
+						await context.SaveChangesAsync();
+					}
+				}
+			}
+			else throw new Exception("Участник или блок не найдены");
+		}
+
+		/// <summary>
+		/// Метод для добавления/удаления мероприятия из блока
+		/// </summary>
+		/// <param name="event_"></param>
+		/// <param name="blockId"></param>
+		/// <returns></returns>
+		public async Task AddOrRemoveElement(Event event_, int blockId)
+		{
+			using var context = new ElectronicBoardDatabase();
+			var ev = await context.Events.FirstOrDefaultAsync(rec => rec.Id == event_.Id);
+			var block = await context.Blocks.FirstOrDefaultAsync(rec => rec.Id == blockId);
+
+			if (ev != null && block != null)
+			{
+				var block_event = await context.BlockEvents.FirstOrDefaultAsync(rec => rec.EventId == ev.Id && rec.BlockId == block.Id);
+				if (block_event == null)
+				{
+					await context.BlockEvents.AddAsync(new BlockEvent
+					{
+						EventId = ev.Id,
+						BlockId = blockId
+					});
+					await context.SaveChangesAsync();
+				}
+				else
+				{
+					context.BlockEvents.Remove(block_event);
+					await context.SaveChangesAsync();
+				}
+			}
+			else throw new Exception("Мероприятие или блок не найдены");
+		}
+
+		/// <summary>
+		/// Метод для создания модели блока
+		/// </summary>
+		/// <param name="block"></param>
+		/// <returns></returns>
+		public Block CreateModel(Block model, Block block)
         {
             block.BlockName = model.BlockName;
             block.BoardId = model.BoardId;

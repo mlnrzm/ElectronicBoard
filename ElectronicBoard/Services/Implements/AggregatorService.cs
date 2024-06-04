@@ -4,10 +4,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ElectronicBoard.Services.Implements
 {
-    public class AggregatorService : IAggregatorService
+	/// <summary>
+	/// Класс для взаимодействия с сущностью "Агрегатор"
+	/// </summary>
+	public class AggregatorService : IAggregatorService
     {
-        // Получение всего списка агрегаторов
-        public async Task<List<Aggregator>> GetFullList()
+		/// <summary>
+		/// Метод для получения списка агрегаторов
+		/// </summary>
+		/// <returns></returns>
+		public async Task<List<Aggregator>> GetFullList()
         {
             using var context = new ElectronicBoardDatabase();
             return (await context.Aggregators.ToListAsync())
@@ -15,27 +21,35 @@ namespace ElectronicBoard.Services.Implements
             .ToList();
         }
 
-        // Получение агрегаторов по id статьи
-        public async Task<List<Aggregator>> GetFilteredList(int ArticleId)
+		/// <summary>
+		/// Метод для получения списка агрегаторов по Id статьи
+		/// </summary>
+		/// <param name="ArticleId"></param>
+		/// <returns></returns>
+		public async Task<List<Aggregator>> GetFilteredList(int ArticleId)
         {
             using var context = new ElectronicBoardDatabase();
             var article_aggr = (await context.ArticleAggregators.ToListAsync()).Where(rec => rec.ArticleId == ArticleId).ToList();
 
             if (article_aggr == null)
             {
-                return null;
+                return new List<Aggregator>();
             }
             List<Aggregator> aggregators = new List<Aggregator>();
             foreach (var aggr in article_aggr)
             {
                 var agg = await context.Aggregators.FirstOrDefaultAsync(rec => rec.Id == aggr.AggregatorId);
-                aggregators.Add(agg);
+                if (agg != null) aggregators.Add(agg);
             }
             return aggregators;
         }
 
-        // Получение агрегатора по id или наименованию
-        public async Task<Aggregator> GetElement(Aggregator model)
+		/// <summary>
+		/// Метод для получения агрегатора по Id или наименованию
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task<Aggregator?> GetElement(Aggregator model)
         {
             if (model == null)
             {
@@ -47,8 +61,12 @@ namespace ElectronicBoard.Services.Implements
             return component != null ? CreateModel(component) : null;
         }
 
-        // Добавление агрегатора
-        public async Task Insert(Aggregator model)
+		/// <summary>
+		/// Метод для добавления агрегатора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Insert(Aggregator model)
         {
             using var context = new ElectronicBoardDatabase();
 			var component = await context.Aggregators
@@ -62,8 +80,12 @@ namespace ElectronicBoard.Services.Implements
 			else throw new Exception("Агрегатор уже существует");
         }
 
-        // Редактирование данных об агрегаторе
-        public async Task Update(Aggregator model)
+		/// <summary>
+		/// Метод для редактирования агрегатора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Update(Aggregator model)
         {
             using var context = new ElectronicBoardDatabase();
             var element = await context.Aggregators.FirstOrDefaultAsync(rec => rec.Id == model.Id);
@@ -80,8 +102,12 @@ namespace ElectronicBoard.Services.Implements
 			else throw new Exception("Такой агрегатор уже существует");
 		}
 
-        // Удаление агрегатора
-        public async Task Delete(Aggregator model)
+		/// <summary>
+		/// Метод для удаления агрегатора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Delete(Aggregator model)
         {
             using var context = new ElectronicBoardDatabase();
             using var transaction = await context.Database.BeginTransactionAsync();
@@ -113,7 +139,13 @@ namespace ElectronicBoard.Services.Implements
                 throw;
             }
         }
-        public Aggregator CreateModel(Aggregator model, Aggregator aggregator)
+
+		/// <summary>
+		/// Метод для создания модели агрегатора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public Aggregator CreateModel(Aggregator model, Aggregator aggregator)
         {
             aggregator.AggregatorName = model.AggregatorName;
             aggregator.AggregatorArticles = model.AggregatorArticles;

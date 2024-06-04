@@ -1,26 +1,52 @@
 ﻿using ElectronicBoard.Models;
-using ElectronicBoard.Services.Implements;
 
 namespace ElectronicBoard.Services.ServiceContracts
 {
+	/// <summary>
+	/// Интерфейс для взаимодействия с сущностью "Мероприятие"
+	/// </summary>
 	public interface IEventService
 	{
-		// Получение всего списка событий
+		/// <summary>
+		/// Метод для получения списка мероприятий
+		/// </summary>
+		/// <returns></returns>
 		public Task<List<Event>> GetFullList();
 
-		// Получение событий по имени или по id блока
-		public Task<List<Event>> GetFilteredList(Event? model, int? blockId);
+		/// <summary>
+		/// Метод для получения списка мероприятий по названию или Id блока
+		/// </summary>
+		/// <param name="model"></param>
+		/// <param name="blockId"></param>
+		/// <returns></returns>
+		public Task<List<Event>> GetFilteredList(int? blockId);
 
-		// Получение события по id или наименованию
-		public Task<Event> GetElement(Event model);
+		/// <summary>
+		/// Метод для получения мероприятия по Id или наименованию
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public Task<Event?> GetElement(Event model);
 
-		// Добавление события
+		/// <summary>
+		/// Метод для добавления мероприятия
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Insert(Event model);
 
-		// Редактирование данных о событии
+		/// <summary>
+		/// Метод для редактирования мероприятия
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Update(Event model);
 
-		// Удаление события
+		/// <summary>
+		/// Метод для удаления мероприятия
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Delete(Event model);
 	}
 }

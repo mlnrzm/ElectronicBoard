@@ -111,7 +111,7 @@ namespace ElectronicBoard.Services.Implements
                 throw new Exception("Стикер не найден");
             }
         }
-        private static Sticker CreateModel(Sticker model, Sticker sticker)
+        public Sticker CreateModel(Sticker model, Sticker sticker)
         {
             sticker.StickerDescription = model.StickerDescription;
             sticker.Picture = model.Picture.CloneByteArray();

@@ -4,7 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ElectronicBoard.Services.Implements
 {
-    public class ArticleService : IArticleService
+	/// <summary>
+	/// Класс для взаимодействия с сущностью "Статья"
+	/// </summary>
+	public class ArticleService : IArticleService
     {
         private IAggregatorService aggregatorService { get; set; }
         private IAuthorService authorService { get; set; }
@@ -16,7 +19,13 @@ namespace ElectronicBoard.Services.Implements
 			authorService = _authorService;
 			this.fileService = fileService;
 		}
-		// Получение всего списка статей
+
+		public ArticleService(){}
+
+		/// <summary>
+		/// Метод для получения списка статей
+		/// </summary>
+		/// <returns></returns>
 		public async Task<List<Article>> GetFullList()
         {
             using var context = new ElectronicBoardDatabase();
@@ -25,8 +34,13 @@ namespace ElectronicBoard.Services.Implements
             .Select(CreateModel)
             .ToList();
         }
-        // Получение статей по id события
-        public async Task<List<Article>> GetFilteredList(int event_id)
+
+		/// <summary>
+		/// Метод для получения списка статей по Id события
+		/// </summary>
+		/// <param name="event_id"></param>
+		/// <returns></returns>
+		public async Task<List<Article>> GetFilteredList(int event_id)
         {
             using var context = new ElectronicBoardDatabase();
             var list = await context.Articles.ToListAsync();
@@ -36,8 +50,12 @@ namespace ElectronicBoard.Services.Implements
 			.ToList();            
         }
 
-        // Получение статьи по id
-        public async Task<Article> GetElement(Article model)
+		/// <summary>
+		/// Метод для получения статьи
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task<Article?> GetElement(Article model)
         {
             if (model == null)
             {
@@ -50,8 +68,12 @@ namespace ElectronicBoard.Services.Implements
             return component != null ? CreateModel(component) : null;
         }
 
-        // Добавление статьи
-        public async Task Insert(Article model)
+		/// <summary>
+		/// Метод для добавления статьи
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Insert(Article model)
         {
             using var context = new ElectronicBoardDatabase();
 			var list = await context.Articles.ToListAsync();
@@ -65,8 +87,12 @@ namespace ElectronicBoard.Services.Implements
 			else throw new Exception("Статья с данным названием уже добавлена");
         }
 
-        // Редактирование данных о статье
-        public async Task Update(Article model)
+		/// <summary>
+		/// Метод для редактирования статьи
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Update(Article model)
         {
             using var context = new ElectronicBoardDatabase();
             var element = await context.Articles.FirstOrDefaultAsync(rec => rec.Id == model.Id);
@@ -83,7 +109,11 @@ namespace ElectronicBoard.Services.Implements
 			else throw new Exception("Статья с данным названием уже добавлена");
 		}
 
-		// Удаление статьи
+		/// <summary>
+		/// Метод для удаления статьи
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public async Task Delete(Article model)
         {
             using var context = new ElectronicBoardDatabase();
@@ -137,8 +167,14 @@ namespace ElectronicBoard.Services.Implements
                 throw;
             }
         }
-        // Привязка и отвязка агрегатора от статьи
-        public async Task GetAggregator(Aggregator model, int article_id)
+
+		/// <summary>
+		/// Метод для прикрепления/открепления агрегатора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <param name="article_id"></param>
+		/// <returns></returns>
+		public async Task GetAggregator(Aggregator model, int article_id)
         {
             using var context = new ElectronicBoardDatabase();
             var this_aggregator = await context.Aggregators.FirstOrDefaultAsync(rec => rec.Id == model.Id);
@@ -186,8 +222,14 @@ namespace ElectronicBoard.Services.Implements
                 }
             }
         }
-        // Привязка и отвязка автора от статьи
-        public async Task GetAuthor(Author model, int article_id)
+
+		/// <summary>
+		/// Метод для прикрепления/открепления автора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <param name="article_id"></param>
+		/// <returns></returns>
+		public async Task GetAuthor(Author model, int article_id)
         {
             using var context = new ElectronicBoardDatabase();
             var this_author = await context.Authors.FirstOrDefaultAsync(rec => rec.Id == model.Id);
@@ -236,7 +278,13 @@ namespace ElectronicBoard.Services.Implements
 				}
             }
         }
-        private static Article CreateModel(Article model, Article article)
+
+		/// <summary>
+		/// Метод для создания модели статьи
+		/// </summary>
+		/// <param name="article"></param>
+		/// <returns></returns>
+		public Article CreateModel(Article model, Article article)
         {
             article.ArticleName = model.ArticleName;
             article.ArticleText = model.ArticleText;
@@ -274,6 +322,11 @@ namespace ElectronicBoard.Services.Implements
             };
         }
 
+		/// <summary>
+		/// Метод для получения списка статей автора
+		/// </summary>
+		/// <param name="author_id"></param>
+		/// <returns></returns>
 		public async Task<List<Article>> GetArticlesAuthor(int author_id)
 		{
             List<Article> find_articles = new List<Article>();

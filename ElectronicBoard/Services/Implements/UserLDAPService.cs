@@ -8,6 +8,11 @@ namespace ElectronicBoard.Services.Implements
 	{
 		private IConnectionAccountsLDAP con { get; set; }
 		public UserLDAPService(IConnectionAccountsLDAP _conn) { con = _conn; }
+
+		public UserLDAPService()
+		{
+		}
+
 		public async Task<UserLDAP> GetElement(UserLDAP model)
 		{
 			await UpdateAccounts();
@@ -32,7 +37,7 @@ namespace ElectronicBoard.Services.Implements
 			context.UserLDAPs.Remove(model);
 			await context.SaveChangesAsync();
 		}
-		private static UserLDAP CreateModel(UserLDAP model, UserLDAP user)
+		public UserLDAP CreateModel(UserLDAP model, UserLDAP user)
 		{
 			user.UserFIO = model.UserFIO;
 			user.UserLogin = model.UserLogin;

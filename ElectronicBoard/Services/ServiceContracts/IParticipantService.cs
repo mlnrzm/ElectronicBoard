@@ -2,29 +2,72 @@
 
 namespace ElectronicBoard.Services.ServiceContracts
 {
+	/// <summary>
+	/// Интерфейс для взаимодействия с сущностью "Участник"
+	/// </summary>
 	public interface IParticipantService
 	{
-		// Получение всего списка участников
+		/// <summary>
+		/// Метод для получения списка участников
+		/// </summary>
+		/// <returns></returns>
 		public Task<List<Participant>> GetFullList();
-		// Поиск участника для входа
-		public Task<Participant> Enter(string login, string password);
 
-		// Получение участников по имени или id блока
-		public Task<List<Participant>> GetFilteredList(Participant? model, int? blockId);
+		/// <summary>
+		/// Метод для получения участников по Id блока
+		/// </summary>
+		/// <param name="blockId"></param>
+		/// <returns></returns>
+		public Task<List<Participant>> GetFilteredList(int? blockId);
 
-		// Получение участника по id или ФИО
-		public Task<Participant> GetElement(Participant model);
+		/// <summary>
+		/// Метод для проверки логина/пароля участника
+		/// </summary>
+		/// <param name="login"></param>
+		/// <param name="password"></param>
+		/// <returns></returns>
+		public Task<Participant?> Enter(string login, string password);
 
-		// Добавление участника
+		/// <summary>
+		/// Метод для получения участника по Id или ФИО
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public Task<Participant?> GetElement(Participant model);
+
+		/// <summary>
+		/// Метод для добавления участника
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Insert(Participant model);
 
-		// Редактирование данных об участнике
+		/// <summary>
+		/// Метод для редактирования участника
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Update(Participant model);
 
-		// Удаление участника
+		/// <summary>
+		/// Метод для удаления участника
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Delete(Participant model);
-		// Удаление участника
+
+		/// <summary>
+		/// Метод для обновления рейтинга
+		/// </summary>
+		/// <param name="partId"></param>
+		/// <returns></returns>
 		public Task UpdRaiting(int partId);
+
+		/// <summary>
+		/// Метод для создания тестового участника
+		/// </summary>
+		/// <param name="participant"></param>
+		/// <returns></returns>
 		public Task CreateTestParticipant(Participant participant);
 	}
 }

@@ -12,6 +12,11 @@ namespace ElectronicBoard.Services.Implements
         {
             fileService = _fileService;
         }
+
+		public StageService()
+		{
+		}
+
 		// Получение всего списка этапов
 		public async Task<List<Stage>> GetFullList()
         {
@@ -113,7 +118,7 @@ namespace ElectronicBoard.Services.Implements
                 throw;
             }
         }
-        private static Stage CreateModel(Stage model, Stage stage)
+        public Stage CreateModel(Stage model, Stage stage)
         {
             stage.ProjectId = model.ProjectId;
             stage.StageName = model.StageName;

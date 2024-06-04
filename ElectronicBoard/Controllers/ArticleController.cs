@@ -64,7 +64,7 @@ namespace ElectronicBoard.Controllers
 				int ArticleId = Convert.ToInt32(articleId);
 				int BlockId = Convert.ToInt32(blockId);
 
-				Article find_article = await articleService.GetElement(new Article { Id = ArticleId });
+				Article? find_article = await articleService.GetElement(new Article { Id = ArticleId });
 
 				// Конвертация изображения
 				if (find_article.Picture.Length > 0)
@@ -201,7 +201,7 @@ namespace ElectronicBoard.Controllers
 					// Добавление и отображение статьи
 					await articleService.Insert(new Article { ArticleName = name, ArticleText = text, ArticlePlaceOfPublication = place, ArticleKeyWords = words, 
 						ArticleStatus = status, ArticleAnnotation = annotation, EventId = _event.Id, Picture = new byte[] { } });
-					Article new_article = await articleService.GetElement(new Article
+					Article? new_article = await articleService.GetElement(new Article
 					{
 						ArticleName = name,
 						ArticleText = text,
@@ -245,7 +245,7 @@ namespace ElectronicBoard.Controllers
 			try
 			{
 				// Передача id статьи
-				Article this_art = await articleService.GetElement(new Article { Id = Convert.ToInt32(id) });
+				Article? this_art = await articleService.GetElement(new Article { Id = Convert.ToInt32(id) });
 				var block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
 				var _event = await eventService.GetElement(new Event { Id = Convert.ToInt32(eventId) });
 
@@ -309,7 +309,8 @@ namespace ElectronicBoard.Controllers
 					}
 					else if (!del)
 					{
-						picture = (await articleService.GetElement(new Article { Id = Id })).Picture;
+						var article = await articleService.GetElement(new Article { Id = Id });
+						if (article != null) picture = article.Picture;
 					}
 
 					// Статус статьи 
@@ -474,8 +475,8 @@ namespace ElectronicBoard.Controllers
 			int ArticleId = Convert.ToInt32(articleId);
 			int BlockId = Convert.ToInt32(blockId);
 
-			Aggregator find_aggregator = await aggregatorService.GetElement(new Aggregator { Id = AggregatorId });
-			Article find_article = await articleService.GetElement(new Article { Id = ArticleId });
+			Aggregator? find_aggregator = await aggregatorService.GetElement(new Aggregator { Id = AggregatorId });
+			Article? find_article = await articleService.GetElement(new Article { Id = ArticleId });
 			Event find_event = await eventService.GetElement(new Event { Id = find_article.EventId });
 
 			if (find_aggregator != null && find_article != null && find_event != null)
@@ -508,8 +509,8 @@ namespace ElectronicBoard.Controllers
 		{
 			if (!string.IsNullOrEmpty(articleId) && !string.IsNullOrEmpty(aggregatorId) && !string.IsNullOrEmpty(blockId))
 			{
-				Aggregator find_aggregator = await aggregatorService.GetElement(new Aggregator { Id = Convert.ToInt32(aggregatorId) });
-				Article find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
+				Aggregator? find_aggregator = await aggregatorService.GetElement(new Aggregator { Id = Convert.ToInt32(aggregatorId) });
+				Article? find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
 				Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
 
 				if (find_aggregator != null && find_article != null && find_block != null)
@@ -542,8 +543,8 @@ namespace ElectronicBoard.Controllers
 			int ArticleId = Convert.ToInt32(articleId);
 			int BlockId = Convert.ToInt32(blockId);
 
-			Aggregator find_aggregator = await aggregatorService.GetElement(new Aggregator { Id = AggregatorId });
-			Article find_article = await articleService.GetElement(new Article { Id = ArticleId });
+			Aggregator? find_aggregator = await aggregatorService.GetElement(new Aggregator { Id = AggregatorId });
+			Article? find_article = await articleService.GetElement(new Article { Id = ArticleId });
 			Event find_event = await eventService.GetElement(new Event { Id = find_article.EventId });
 
 			if (find_aggregator != null && find_article != null)
@@ -577,7 +578,7 @@ namespace ElectronicBoard.Controllers
 			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
 			ViewBag.ActiveBoards = activeBoards;
 
-			Article find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
+			Article? find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
 			Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
 
 			if (find_article != null && find_block != null)
@@ -599,7 +600,7 @@ namespace ElectronicBoard.Controllers
 			int ArticleId = Convert.ToInt32(articleId);
 			int BlockId = Convert.ToInt32(blockId);
 
-			Article find_article = await articleService.GetElement(new Article { Id = ArticleId });
+			Article? find_article = await articleService.GetElement(new Article { Id = ArticleId });
 			Event find_event = await eventService.GetElement(new Event { Id = find_article.EventId });
 
 			if (find_event != null && find_article != null && !string.IsNullOrEmpty(name))
@@ -607,8 +608,8 @@ namespace ElectronicBoard.Controllers
 				try
 				{
 					await aggregatorService.Insert(new Aggregator { AggregatorName = name });
-					Aggregator new_agg = await aggregatorService.GetElement(new Aggregator { AggregatorName = name });
-					await articleService.GetAggregator(new_agg, find_article.Id);
+					Aggregator? new_agg = await aggregatorService.GetElement(new Aggregator { AggregatorName = name });
+					if (new_agg != null) await articleService.GetAggregator(new_agg, find_article.Id);
 					Response.Redirect($"/article/index?blockId=" + idn.GetAscii(BlockId.ToString()) + "&eventId=" + idn.GetAscii(find_event.Id.ToString()) + "&articleId=" + idn.GetAscii(find_article.Id.ToString()));
 				}
 				catch (Exception ex)

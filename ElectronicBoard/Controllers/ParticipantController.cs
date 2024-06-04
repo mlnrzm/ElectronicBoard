@@ -148,12 +148,26 @@ namespace ElectronicBoard.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Enter()
 		{
-			//createTest().Wait();
+			createTest().Wait();
 			return View();
 		}
 		[HttpPost]
 		public async Task Enter(string login, string password)
 		{
+			var user_app = await _userManager.FindByNameAsync(login);
+
+			IEnumerable<Claim> claims = await _userManager.GetClaimsAsync(user_app);
+			var token = GetToken(user_app, claims);
+
+			HttpContext.Response.Cookies.Append(".AspNetCore.Application.Id", token,
+			new CookieOptions
+			{
+				MaxAge = TimeSpan.FromMinutes(60)
+			});
+
+			Response.Redirect($"/board/index?" +
+				$"BoardName={idn.GetAscii("Общая доска")}");
+			/*
 			if (!string.IsNullOrEmpty(login) && !string.IsNullOrEmpty(password))
 			{
 				string hashedPassword = "{CRYPT}" + BCrypt.Net.BCrypt.HashPassword(password, 10);
@@ -282,6 +296,7 @@ namespace ElectronicBoard.Controllers
 				_notyf.Error("Введите логин и пароль");
 				Response.Redirect($"/participant/enter");
 			}
+			*/
 		}
 
 		// Выход 
@@ -529,7 +544,7 @@ namespace ElectronicBoard.Controllers
 			if (find_block != null)
 			{
 				List<Participant> all_part = await participantService.GetFullList();
-				List<Participant> block_part = await participantService.GetFilteredList(null, find_block.Id);
+				List<Participant> block_part = await participantService.GetFilteredList(find_block.Id);
 
 				List<Participant> part_for_adds = new List<Participant>();
 

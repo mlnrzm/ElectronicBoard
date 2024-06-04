@@ -4,37 +4,52 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ElectronicBoard.Services.Implements
 {
-    public class AuthorService : IAuthorService
+	/// <summary>
+	/// Класс для взаимодействия с сущностью "Автор"
+	/// </summary>
+	public class AuthorService : IAuthorService
     {
-        // Получение всего списка авторов
-        public async Task<List<Author>> GetFullList()
+		/// <summary>
+		/// Метод для получения списка авторов
+		/// </summary>
+		/// <returns></returns>
+		public async Task<List<Author>> GetFullList()
         {
             using var context = new ElectronicBoardDatabase();
             return (await context.Authors.ToListAsync())
             .Select(CreateModel)
             .ToList();
         }
-        // Получение авторов по id статьи
-        public async Task<List<Author>> GetFilteredList(int ArticleId)
+
+		/// <summary>
+		/// Метод для получения списка авторов по Id статьи
+		/// </summary>
+		/// <param name="ArticleId"></param>
+		/// <returns></returns>
+		public async Task<List<Author>> GetFilteredList(int ArticleId)
         {
             using var context = new ElectronicBoardDatabase();
             var article_aut = (await context.ArticleAuthors.ToListAsync()).Where(rec => rec.ArticleId == ArticleId).ToList();
 
             if (article_aut == null)
             {
-                return null;
+                return new List<Author>();
             }
             List<Author> authors = new List<Author>();
             foreach (var auth in article_aut)
             {
                 var agg = await context.Authors.FirstOrDefaultAsync(rec => rec.Id == auth.AuthorId);
-                authors.Add(agg);
+                if (agg != null) authors.Add(agg);
             }
             return authors;
         }
 
-        // Получение автора по id или ФИО
-        public async Task<Author> GetElement(Author model)
+		/// <summary>
+		/// Метод для получения автора по Id или ФИО
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task<Author?> GetElement(Author model)
         {
             if (model == null)
             {
@@ -46,8 +61,12 @@ namespace ElectronicBoard.Services.Implements
             return component != null ? CreateModel(component) : null;
         }
 
-        // Добавление автора
-        public async Task Insert(Author model)
+		/// <summary>
+		/// Метод для добавления автора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Insert(Author model)
         {
             using var context = new ElectronicBoardDatabase();
 			var component = await context.Authors
@@ -60,8 +79,12 @@ namespace ElectronicBoard.Services.Implements
 			else throw new Exception("Автор " + model.AuthorFIO + " уже добавлен");
         }
 
-        // Редактирование данных о статье
-        public async Task Update(Author model)
+		/// <summary>
+		/// Метод для редактирования автора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Update(Author model)
         {
             using var context = new ElectronicBoardDatabase();
             var element = await context.Authors.FirstOrDefaultAsync(rec => rec.Id == model.Id);
@@ -78,7 +101,11 @@ namespace ElectronicBoard.Services.Implements
 			else throw new Exception("Автор " + model.AuthorFIO + " уже существует");
 		}
 
-		// Удаление автора
+		/// <summary>
+		/// Метод для удаления автора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public async Task Delete(Author model)
         {
             using var context = new ElectronicBoardDatabase();
@@ -99,7 +126,14 @@ namespace ElectronicBoard.Services.Implements
                 throw new Exception("Автор не найден");
             }
         }
-        public Author CreateModel(Author model, Author author)
+
+		/// <summary>
+		/// Метод для создания модели автора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <param name="author"></param>
+		/// <returns></returns>
+		public Author CreateModel(Author model, Author author)
         {
             author.AuthorFIO = model.AuthorFIO;
             author.AuthorEmail = model.AuthorEmail;

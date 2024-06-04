@@ -2,24 +2,58 @@
 
 namespace ElectronicBoard.Services.ServiceContracts
 {
+	/// <summary>
+	/// Интерфейс для взаимодействия с сущностью "Автор"
+	/// </summary>
 	public interface IAuthorService
 	{
-		// Получение всего списка авторов
+		/// <summary>
+		/// Метод для получения списка авторов
+		/// </summary>
+		/// <returns></returns>
 		public Task<List<Author>> GetFullList();
-		// Получение авторов по id статьи
+
+		/// <summary>
+		/// Метод для получения списка авторов по Id статьи
+		/// </summary>
+		/// <param name="ArticleId"></param>
+		/// <returns></returns>
 		public Task<List<Author>> GetFilteredList(int ArticleId);
 
-		// Получение автора по id или ФИО
-		public Task<Author> GetElement(Author model);
+		/// <summary>
+		/// Метод для получения автора по Id или ФИО
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public Task<Author?> GetElement(Author model);
 
-		// Добавление автора
+		/// <summary>
+		/// Метод для добавления автора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Insert(Author model);
 
-		// Редактирование данных об авторе
+		/// <summary>
+		/// Метод для редактирования автора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Update(Author model);
 
-		// Удаление автора
+		/// <summary>
+		/// Метод для удаления автора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Delete(Author model);
+
+		/// <summary>
+		/// Метод для создания модели автора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <param name="author"></param>
+		/// <returns></returns>
 		public Author CreateModel(Author model, Author author);
 	}
 }

@@ -2,19 +2,50 @@
 
 namespace ElectronicBoard.Services.ServiceContracts
 {
+	/// <summary>
+	/// Интерфейс для взаимодействия с сущностью "Этап"
+	/// </summary>
 	public interface IStageService
 	{
-		// Получение всего списка этапов
+		/// <summary>
+		/// Метод для получения списка этапов
+		/// </summary>
+		/// <returns></returns>
 		public Task<List<Stage>> GetFullList();
-		// Получение этапов по id проекта
+
+		/// <summary>
+		/// Метод для получения списка этапов по Id проекта
+		/// </summary>
+		/// <param name="ProjectId"></param>
+		/// <returns></returns>
 		public Task<List<Stage>> GetFilteredList(int ProjectId);
-		// Получение этапа по id или названию
+
+		/// <summary>
+		/// Метод для получения этапа по Id или названию
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task<Stage> GetElement(Stage model);
-		// Добавление этапа
+
+		/// <summary>
+		/// Метод для добавления этапа
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Insert(Stage model);
-		// Редактирование данных об этапе
+
+		/// <summary>
+		/// Метод для редактирования этапа
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Update(Stage model);
-		// Удаление этапа
+
+		/// <summary>
+		/// Метод для удаления этапа
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Delete(Stage model);
 	}
 }

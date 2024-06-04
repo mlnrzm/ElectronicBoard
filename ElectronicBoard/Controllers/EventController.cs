@@ -243,7 +243,7 @@ namespace ElectronicBoard.Controllers
 
 				// Передача мероприятий, которые можно добавить в блок (id - значения)
 				List<Event> all_events = await eventService.GetFullList();
-				List<Event> block_events = await eventService.GetFilteredList(null, BlockId);
+				List<Event> block_events = await eventService.GetFilteredList(BlockId);
 
 				List<Event> events_for_adds = new List<Event>();
 				foreach (var ev in all_events)

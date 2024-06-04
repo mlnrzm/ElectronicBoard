@@ -1,31 +1,58 @@
 ﻿using ElectronicBoard.Models;
-using ElectronicBoard.Services.Implements;
 
 namespace ElectronicBoard.Services.ServiceContracts
 {
+	/// <summary>
+	/// Интерфейс для взаимодействия с сущностью "Доска"
+	/// </summary>
 	public interface IBoardService
 	{
-		// Получение всего списка досок
+		/// <summary>
+		/// Метод для получения списка досок
+		/// </summary>
+		/// <returns></returns>
 		public Task<List<Board>> GetFullList();
 
-		// Получение списка досок по названию
-		public Task<List<Board>> GetFilteredList(Board model);
-		// Получение досок участника
+		/// <summary>
+		/// Метод для получения списка досок участника по Id участника
+		/// </summary>
+		/// <param name="participantId"></param>
+		/// <returns></returns>
 		public Task<List<Board>> GetParticipantBoards(int participantId);
 
-		// Получение доски по id или названию
-		public Task<Board> GetElement(Board model);
+		/// <summary>
+		/// Метод для получения доски по Id или названию
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public Task<Board?> GetElement(Board model);
 
-		// Добавление доски
+		/// <summary>
+		/// Метод для добавления доски
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Insert(Board model);
 
-		// Редактирование данных о доске
+		/// <summary>
+		/// Метод для редактирования доски
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Update(Board model);
 
-		// Удаление доски
+		/// <summary>
+		/// Метод для удаления доски
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Delete(Board model);
 
-		// Создание общей доски
+		/// <summary>
+		/// Метод для создания общей доски
+		/// </summary>
+		/// <param name="part"></param>
+		/// <returns></returns>
 		public Task CreateMainBoard(Participant part);
 	}
 }

@@ -1,23 +1,59 @@
 ﻿using ElectronicBoard.Models;
-using ElectronicBoard.Services.Implements;
 
 namespace ElectronicBoard.Services.ServiceContracts
 {
+	/// <summary>
+	/// Интерфейс для взаимодействия с сущностью "Проект"
+	/// </summary>
 	public interface IProjectService
 	{
-		// Получение всего списка проектов
+		/// <summary>
+		/// Метод для получения списка проектов
+		/// </summary>
+		/// <returns></returns>
 		public Task<List<Project>> GetFullList();
-		// Получение проектов по id блока
+
+		/// <summary>
+		/// Метод для получения списка проектов по Id блока
+		/// </summary>
+		/// <param name="BlockId"></param>
+		/// <returns></returns>
 		public Task<List<Project>> GetFilteredList(int BlockId);
-		// Получение проекта по id или названию
+
+		/// <summary>
+		/// Метод для получения проекта по Id или названию
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task<Project> GetElement(Project model);
-		// Добавление проекта
+
+		/// <summary>
+		/// Метод для добавления проекта
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Insert(Project model);
-		// Редактирование данных о проекте
+
+		/// <summary>
+		/// Метод для редактирования проекта
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Update(Project model);
-		// Удаление проекта
+
+		/// <summary>
+		/// Метод для удаления проекта
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Delete(Project model);
-		// Привязка и отвязка ответственных за проект
+
+		/// <summary>
+		/// Метод для прикрепления/открепления ответственного
+		/// </summary>
+		/// <param name="model"></param>
+		/// <param name="project_id"></param>
+		/// <returns></returns>
 		public Task GetResponsable(Participant model, int project_id);
 	}
 }

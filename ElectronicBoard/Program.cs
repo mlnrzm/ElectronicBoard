@@ -1,4 +1,6 @@
 using ElectronicBoard.Models;
+using System.IO;
+using System.Text;
 
 namespace ElectronicBoard
 {
@@ -11,6 +13,24 @@ namespace ElectronicBoard
 
 		public static void Main(string[] args)
 		{
+
+			string rootPath = @"C:\Users\User\source\repos\ElectronicBoard";
+			var header = "***********************************" + Environment.NewLine;
+
+			var files = Directory.GetFiles(rootPath, "*.cs", SearchOption.AllDirectories);
+
+			var result = files.Select(path => new { Name = Path.GetFileName(path), Contents = System.IO.File.ReadAllText(path) })
+							  .Select(info =>
+								  header
+								+ "Filename: " + info.Name + Environment.NewLine
+								+ header
+								+ info.Contents);
+
+
+			var singleStr = string.Join(Environment.NewLine, result);
+			Console.WriteLine(singleStr);
+            System.IO.File.WriteAllText(@"C:\tmp\output.txt", singleStr, Encoding.UTF8);
+
 			CreateHostBuilder(args).Build().Run();
 		}
 

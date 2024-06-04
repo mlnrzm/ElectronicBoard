@@ -46,7 +46,7 @@ namespace ElectronicBoard.Controllers
 			int ArticleId = Convert.ToInt32(articleId);
 			int BlockId = Convert.ToInt32(blockId);
 
-			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
 			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
 			ViewBag.ActivePart = activeUser;
 
@@ -54,7 +54,7 @@ namespace ElectronicBoard.Controllers
 			ViewBag.ActiveBoards = activeBoards;
 
 			Author find_author = await authorService.GetElement(new Author { Id = AuthorId });
-			Article find_article = await articleService.GetElement(new Article { Id = ArticleId });
+			Article? find_article = await articleService.GetElement(new Article { Id = ArticleId });
 			Block find_block = await blockService.GetElement(new Block { Id = BlockId });
 
 			if (find_author != null && find_article != null && find_block != null)
@@ -98,14 +98,14 @@ namespace ElectronicBoard.Controllers
 		[HttpGet]
 		public async Task<IActionResult> AddNewAuthor(string blockId, string articleId)
 		{
-			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+			IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
 			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
 			ViewBag.ActivePart = activeUser;
 
 			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
 			ViewBag.ActiveBoards = activeBoards;
 
-			Article find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
+			Article? find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
 			Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
 
 			if (find_article != null && find_block != null) 
@@ -147,7 +147,7 @@ namespace ElectronicBoard.Controllers
 				!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(organization) &&
 				!string.IsNullOrEmpty(email) && !string.IsNullOrEmpty(partId))
 			{
-				Article find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
+				Article? find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
 				Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
 
 				if (find_article != null && find_block != null)
@@ -217,7 +217,7 @@ namespace ElectronicBoard.Controllers
 			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
 			ViewBag.ActiveBoards = activeBoards;
 
-			Article find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
+			Article? find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
 			Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
 
 			if (find_article != null && find_block != null)

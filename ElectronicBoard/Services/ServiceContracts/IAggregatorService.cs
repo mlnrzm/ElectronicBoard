@@ -2,26 +2,57 @@
 
 namespace ElectronicBoard.Services.ServiceContracts
 {
+	/// <summary>
+	/// Интерфейс для взаимодействия с сущностью "Агрегатор"
+	/// </summary>
 	public interface IAggregatorService
 	{
-		// Получение всего списка агрегаторов
+		/// <summary>
+		/// Метод для получения списка агрегаторов
+		/// </summary>
+		/// <returns></returns>
 		public Task<List<Aggregator>> GetFullList();
 
-		// Получение агрегаторов по id статьи
+		/// <summary>
+		/// Метод для получения списка агрегаторов по Id статьи
+		/// </summary>
+		/// <param name="ArticleId"></param>
+		/// <returns></returns>
 		public Task<List<Aggregator>> GetFilteredList(int ArticleId);
 
-		// Получение агрегатора по id или наименованию
-		public Task<Aggregator> GetElement(Aggregator model);
+		/// <summary>
+		/// Метод для получения агрегатора по Id или наименованию
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public Task<Aggregator?> GetElement(Aggregator model);
 
-		// Добавление агрегатора
+		/// <summary>
+		/// Метод для добавления агрегатора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Insert(Aggregator model);
 
-		// Редактирование данных об агрегаторе
+		/// <summary>
+		/// Метод для редактирования агрегатора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Update(Aggregator model);
 
-		// Удаление агрегатора
+		/// <summary>
+		/// Метод для удаления агрегатора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Delete(Aggregator model);
-		public Aggregator CreateModel(Aggregator model, Aggregator aggregator);
 
+		/// <summary>
+		/// Метод для создания модели агрегатора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public Aggregator CreateModel(Aggregator model, Aggregator aggregator);
 	}
 }

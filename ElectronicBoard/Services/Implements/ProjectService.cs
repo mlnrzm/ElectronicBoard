@@ -18,6 +18,10 @@ namespace ElectronicBoard.Services.Implements
             stickerService = _stickerService;
 		}
 
+		public ProjectService()
+		{
+		}
+
 		// Получение всего списка проектов
 		public async Task<List<Project>> GetFullList()
         {
@@ -176,7 +180,7 @@ namespace ElectronicBoard.Services.Implements
                 throw new Exception("Назначить ответственного не удалось");
             }
         }
-        private static Project CreateModel(Project model, Project project)
+        public Project CreateModel(Project model, Project project)
         {
             project.ProjectName = model.ProjectName;
             project.ProjectText = model.ProjectText;

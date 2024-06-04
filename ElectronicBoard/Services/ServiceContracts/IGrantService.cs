@@ -2,28 +2,65 @@
 
 namespace ElectronicBoard.Services.ServiceContracts
 {
+	/// <summary>
+	/// Интерфейс для взаимодействия с сущностью "Грант"
+	/// </summary>
 	public interface IGrantService
 	{
-		// Получение всего списка грантов
+		/// <summary>
+		/// Метод для получения списка грантов
+		/// </summary>
+		/// <returns></returns>
 		public Task<List<Grant>> GetFullList();
 
-		// Получение грантов по id блока (!!!)
+		/// <summary>
+		/// Метод для получения списка грантов по Id блока
+		/// </summary>
+		/// <param name="BlockId"></param>
+		/// <returns></returns>
 		public Task<List<Grant>> GetFilteredList(int BlockId);
 
-		// Получение гранта по id или названию
-		public Task<Grant> GetElement(Grant model);
+		/// <summary>
+		/// Метод для получения гранта по Id или названию
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public Task<Grant?> GetElement(Grant model);
 
-		// Добавление гранта
+		/// <summary>
+		/// Метод для добавления гранта
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Insert(Grant model);
 
-		// Редактирование данных о гранте
+		/// <summary>
+		/// Метод для редактирования гранта
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Update(Grant model);
 
-		// Удаление гранта
+		/// <summary>
+		/// Метод для удаления гранта
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Delete(Grant model);
-		// Привязка и отвязка участника от гранта 
+
+		/// <summary>
+		/// Метод для прикрепления/открепления участника от гранта
+		/// </summary>
+		/// <param name="model"></param>
+		/// <param name="grant_id"></param>
+		/// <returns></returns>
 		public Task GetParticipant(Participant model, int grant_id);
-		// Получение участников гранта
+
+		/// <summary>
+		/// Метод для получения списка участников гранта
+		/// </summary>
+		/// <param name="grantId"></param>
+		/// <returns></returns>
 		public Task<List<Participant>> GetParticipants(int grantId);
 	}
 }

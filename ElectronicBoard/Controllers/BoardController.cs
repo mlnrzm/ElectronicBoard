@@ -9,7 +9,7 @@ using System.Globalization;
 
 namespace ElectronicBoard.Controllers
 {
-	[Authorize]
+	//[Authorize]
 	public class BoardController : Controller
     {
 		private readonly ILogger<BoardController> _logger;

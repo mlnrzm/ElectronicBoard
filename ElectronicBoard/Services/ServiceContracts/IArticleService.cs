@@ -1,35 +1,81 @@
 ﻿using ElectronicBoard.Models;
-using ElectronicBoard.Services.Implements;
 
 namespace ElectronicBoard.Services.ServiceContracts
 {
+	/// <summary>
+	/// Интерфейс для взаимодействия с сущностью "Статья"
+	/// </summary>
 	public interface IArticleService
 	{
-		// Получение всего списка статей
+		/// <summary>
+		/// Метод для получения списка статей
+		/// </summary>
+		/// <returns></returns>
 		public Task<List<Article>> GetFullList();
-		// Получение статей по имени или id события
+
+		/// <summary>
+		/// Метод для получения списка статей по Id события
+		/// </summary>
+		/// <param name="event_id"></param>
+		/// <returns></returns>
 		public Task<List<Article>> GetFilteredList(int event_id);
 
-		// Получение статьи по id или наименованию
-		public Task<Article> GetElement(Article model);
+		/// <summary>
+		/// Метод для получения статьи
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public Task<Article?> GetElement(Article model);
 
-		// Добавление статьи
+		/// <summary>
+		/// Метод для добавления статьи
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Insert(Article model);
 
-		// Редактирование данных о статье
+		/// <summary>
+		/// Метод для редактирования статьи
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Update(Article model);
 
-		// Удаление статьи
+		/// <summary>
+		/// Метод для удаления статьи
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Delete(Article model);
 
-		// Привязка и отвязка агрегатора от статьи
+		/// <summary>
+		/// Метод для прикрепления/открепления агрегатора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <param name="article_id"></param>
+		/// <returns></returns>
 		public Task GetAggregator(Aggregator model, int article_id);
 
-		// Привязка и отвязка автора от статьи
+		/// <summary>
+		/// Метод для прикрепления/открепления автора
+		/// </summary>
+		/// <param name="model"></param>
+		/// <param name="article_id"></param>
+		/// <returns></returns>
 		public Task GetAuthor(Author model, int article_id);
 
-		// Получение статей автора
+		/// <summary>
+		/// Метод для получения списка статей автора
+		/// </summary>
+		/// <param name="author_id"></param>
+		/// <returns></returns>
 		public Task<List<Article>> GetArticlesAuthor(int author_id);
+
+		/// <summary>
+		/// Метод для создания модели статьи
+		/// </summary>
+		/// <param name="article"></param>
+		/// <returns></returns>
 		public Article CreateModel(Article article);
 	}
 }

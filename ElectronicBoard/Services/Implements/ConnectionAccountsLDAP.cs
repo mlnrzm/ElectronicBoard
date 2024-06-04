@@ -4,14 +4,24 @@ using Novell.Directory.Ldap;
 
 namespace ElectronicBoard.Services.Implements
 {
+	/// <summary>
+	/// Класс для работы с подключением к LDAP
+	/// </summary>
 	public class ConnectionAccountsLDAP : IConnectionAccountsLDAP
 	{
+		/// <summary>
+		/// Метод для загрузки списка учетных записей УлГТУ, хранящихся в LDAP
+		/// </summary>
+		/// <param name="userLDAPService"></param>
+		/// <returns></returns>
 		public async Task ConnectionLDAP(IUserLDAPService userLDAPService)
 		{
-			string ldapHost = "lk.ustu";
-			int ldapPort = 389;
-			string loginDN = "cn=sciencemon,ou=services,dc=ams,dc=ulstu,dc=ru";
-			string password = "oPma80K#mE5$h8Er71Ga";
+			var MyConfig = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+			string? ldapHost = MyConfig.GetValue<string>("LDAPSettings:LdapHost");
+			int ldapPort = (int) MyConfig.GetValue<int>("LDAPSettings:LdapPort");
+			string? loginDN = MyConfig.GetValue<string>("LDAPSettings:LdapLoginDN");
+			string? password = MyConfig.GetValue<string>("LDAPSettings:LdapPassword");
 
 			string searchBase = "ou=accounts,dc=ams,dc=ulstu,dc=ru";
 			string searchFilter = "objectClass=ulstuPerson";
@@ -33,7 +43,7 @@ namespace ElectronicBoard.Services.Implements
 
 				while (lsc.HasMore())
 				{
-					LdapEntry nextEntry = null;
+					LdapEntry? nextEntry = null;
 					try
 					{
 						nextEntry = lsc.Next();

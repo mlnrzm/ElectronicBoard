@@ -5,10 +5,16 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace ElectronicBoard.Services.Implements
 {
-    public class GrantService : IGrantService
+	/// <summary>
+	/// Класс для взаимодействия с сущностью "Грант"
+	/// </summary>
+	public class GrantService : IGrantService
     {
-        // Получение всего списка грантов
-        public async Task<List<Grant>> GetFullList()
+		/// <summary>
+		/// Метод для получения списка грантов
+		/// </summary>
+		/// <returns></returns>
+		public async Task<List<Grant>> GetFullList()
         {
             using var context = new ElectronicBoardDatabase();
             return (await context.Grants.ToListAsync())
@@ -16,12 +22,16 @@ namespace ElectronicBoard.Services.Implements
             .ToList();
         }
 
-        // Получение грантов по id блока (!!!)
-        public async Task<List<Grant>> GetFilteredList(int BlockId)
+		/// <summary>
+		/// Метод для получения списка грантов по Id блока
+		/// </summary>
+		/// <param name="BlockId"></param>
+		/// <returns></returns>
+		public async Task<List<Grant>> GetFilteredList(int BlockId)
         {
             if (BlockId < 0)
             {
-                return null;
+                return new List<Grant>();
             }
             using var context = new ElectronicBoardDatabase();
             return (await context.Grants.ToListAsync())
@@ -30,8 +40,12 @@ namespace ElectronicBoard.Services.Implements
             .ToList();
         }
 
-        // Получение гранта по id или названию
-        public async Task<Grant> GetElement(Grant model)
+		/// <summary>
+		/// Метод для получения гранта по Id или названию
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task<Grant?> GetElement(Grant model)
         {
             if (model == null)
             {
@@ -43,8 +57,12 @@ namespace ElectronicBoard.Services.Implements
             return component != null ? CreateModel(component) : null;
         }
 
-        // Добавление гранта
-        public async Task Insert(Grant model)
+		/// <summary>
+		/// Метод для добавления гранта
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Insert(Grant model)
         {
             using var context = new ElectronicBoardDatabase();
 			var component = await context.Grants
@@ -57,8 +75,12 @@ namespace ElectronicBoard.Services.Implements
 			else throw new Exception("Грант с таким названием уже существует");
         }
 
-        // Редактирование данных о гранте
-        public async Task Update(Grant model)
+		/// <summary>
+		/// Метод для редактирования гранта
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Update(Grant model)
         {
             using var context = new ElectronicBoardDatabase();
             var element = await context.Grants.FirstOrDefaultAsync(rec => rec.Id == model.Id);
@@ -75,7 +97,11 @@ namespace ElectronicBoard.Services.Implements
 			else throw new Exception("Грант с таким названием уже существует");
 		}
 
-		// Удаление гранта
+		/// <summary>
+		/// Метод для удаления гранта
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public async Task Delete(Grant model)
         {
             using var context = new ElectronicBoardDatabase();
@@ -106,8 +132,14 @@ namespace ElectronicBoard.Services.Implements
                 throw;
             }
         }
-        // Привязка и отвязка участника от гранта 
-        public async Task GetParticipant(Participant model, int grant_id)
+
+		/// <summary>
+		/// Метод для прикрепления/открепления участника от гранта
+		/// </summary>
+		/// <param name="model"></param>
+		/// <param name="grant_id"></param>
+		/// <returns></returns>
+		public async Task GetParticipant(Participant model, int grant_id)
         {
             using var context = new ElectronicBoardDatabase();
             var this_part = await context.Participants.FirstOrDefaultAsync(rec => rec.Id == model.Id);
@@ -140,8 +172,13 @@ namespace ElectronicBoard.Services.Implements
                     throw new Exception("Грант не найден");
             }
         }
-        // Получение участников гранта
-        public async Task<List<Participant>> GetParticipants(int grantId) 
+
+		/// <summary>
+		/// Метод для получения списка участников гранта
+		/// </summary>
+		/// <param name="grantId"></param>
+		/// <returns></returns>
+		public async Task<List<Participant>> GetParticipants(int grantId) 
         {
             List<Participant> participants = new List<Participant>();
 			using var context = new ElectronicBoardDatabase();
@@ -159,7 +196,7 @@ namespace ElectronicBoard.Services.Implements
             return participants;
 		}
 
-		private static Grant CreateModel(Grant model, Grant grant)
+		public Grant CreateModel(Grant model, Grant grant)
         {
             grant.BlockId = model.BlockId;
             grant.GrantName = model.GrantName;

@@ -80,7 +80,7 @@ namespace ElectronicBoard.Controllers
 					// Участников
 					if (find_block.BlockName.Contains("Участники"))
 					{
-						List<Participant> parts = await partService.GetFilteredList(null, find_block.Id);
+						List<Participant> parts = await partService.GetFilteredList(find_block.Id);
 						List<Participant> added_parts = new List<Participant>();
 						foreach (var part in parts) { added_parts.Add(part); }
 						ViewBag.Participants = added_parts;
@@ -88,7 +88,7 @@ namespace ElectronicBoard.Controllers
 					// Мероприятия
 					else if (find_block.BlockName.Contains("Мероприятия"))
 					{
-						List<Event> events = await eventService.GetFilteredList(null, find_block.Id);
+						List<Event> events = await eventService.GetFilteredList(find_block.Id);
 						List<Event> added_events = new List<Event>();
 						foreach (var ev in events)
 						{

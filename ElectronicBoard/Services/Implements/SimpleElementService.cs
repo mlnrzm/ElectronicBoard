@@ -16,8 +16,12 @@ namespace ElectronicBoard.Services.Implements
             stickerService = _stickerService;
         }
 
-        // Получение всего списка элементов
-        public async Task<List<SimpleElement>> GetFullList()
+		public SimpleElementService()
+		{
+		}
+
+		// Получение всего списка элементов
+		public async Task<List<SimpleElement>> GetFullList()
         {
             using var context = new ElectronicBoardDatabase();
             return (await context.SimpleElements.ToListAsync())
@@ -114,7 +118,7 @@ namespace ElectronicBoard.Services.Implements
                 throw new Exception("Элемент не найден");
             }
         }
-        private static SimpleElement CreateModel(SimpleElement model, SimpleElement element)
+        public SimpleElement CreateModel(SimpleElement model, SimpleElement element)
         {
             element.BlockId = model.BlockId;
             element.SimpleElementName = model.SimpleElementName;

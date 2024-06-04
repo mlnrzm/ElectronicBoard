@@ -1,31 +1,74 @@
 ﻿using ElectronicBoard.Models;
-using ElectronicBoard.Services.Implements;
 
 namespace ElectronicBoard.Services.ServiceContracts
 {
+	/// <summary>
+	/// Интерфейс для взаимодействия с сущностью "Блок"
+	/// </summary>
 	public interface IBlockService
 	{
-		public Task AddOrRemoveElement(Participant participant, int blockId);
-		public Task AddOrRemoveElement(Event event_, int blockId);
-
-		// Получение всего списка блоков
+		/// <summary>
+		/// Метод для получения списка блоков
+		/// </summary>
+		/// <returns></returns>
 		public Task<List<Block>> GetFullList();
 
-		// Получение списка блоков по названию или id доски
+		/// <summary>
+		/// Метод для получения списка блоков (по Id доски)
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task<List<Block>> GetFilteredList(Block model);
 
-		// Получение блока по id или названию
-		public Task<Block> GetElement(Block model);
+		/// <summary>
+		/// Метод для получения блока по Id или названию
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public Task<Block?> GetElement(Block model);
 
-		// Добавление блока
+		/// <summary>
+		/// Метод для добавления блока
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Insert(Block model);
 
-		// Редактирование данных о блоке
+		/// <summary>
+		/// Метод для редактирования блока
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Update(Block model);
 
-		// Удаление блока
+		/// <summary>
+		/// Метод для удаления блока
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Delete(Block model);
 
+		/// <summary>
+		/// Метод для добавления/удаления участника из блока
+		/// </summary>
+		/// <param name="participant"></param>
+		/// <param name="blockId"></param>
+		/// <returns></returns>
+		public Task AddOrRemoveElement(Participant participant, int blockId);
+
+		/// <summary>
+		/// Метод для добавления/удаления мероприятия из блока
+		/// </summary>
+		/// <param name="event_"></param>
+		/// <param name="blockId"></param>
+		/// <returns></returns>
+		public Task AddOrRemoveElement(Event event_, int blockId);
+
+		/// <summary>
+		/// Метод для создания модели блока
+		/// </summary>
+		/// <param name="block"></param>
+		/// <returns></returns>
 		public Block CreateModel(Block block);
 	}
 }

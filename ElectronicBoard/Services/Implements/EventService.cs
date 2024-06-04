@@ -2,11 +2,13 @@
 using ElectronicBoard.Services.ServiceContracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Linq.Expressions;
 
 namespace ElectronicBoard.Services.Implements
 {
-    public class EventService : IEventService
+	/// <summary>
+	/// Класс для взаимодействия с сущностью "Мероприятие"
+	/// </summary>
+	public class EventService : IEventService
     {
         private IArticleService articleService { get; set; }
         private IFileService fileService { get; set; }
@@ -18,8 +20,14 @@ namespace ElectronicBoard.Services.Implements
             fileService = _fileService;
             stickerService = _stickerService;
         }
-        // Получение всего списка событий
-        public async Task<List<Event>> GetFullList()
+
+		public EventService() {}
+
+		/// <summary>
+		/// Метод для получения списка мероприятий
+		/// </summary>
+		/// <returns></returns>
+		public async Task<List<Event>> GetFullList()
         {
             using var context = new ElectronicBoardDatabase();
             return (await context.Events.ToListAsync())
@@ -27,16 +35,21 @@ namespace ElectronicBoard.Services.Implements
             .ToList();
         }
 
-        // Получение событий по имени или по id блока
-        public async Task<List<Event>> GetFilteredList(Event? model, int? blockId)
+		/// <summary>
+		/// Метод для получения списка мероприятий по Id блока
+		/// </summary>
+		/// <param name="model"></param>
+		/// <param name="blockId"></param>
+		/// <returns></returns>
+		public async Task<List<Event>> GetFilteredList(int? blockId)
         {
             List<Event> events = new List<Event>();
             using var context = new ElectronicBoardDatabase();
-            if (model == null && blockId == null)
+            if (blockId == null)
             {
-                return null;
+                return new List<Event>();
             }
-            else if (blockId != null)
+            else
             {
                 var block_events = (await context.BlockEvents.ToListAsync()).Where(rec => rec.BlockId == blockId);
                 if (block_events != null)
@@ -49,17 +62,14 @@ namespace ElectronicBoard.Services.Implements
                 }
                 return events;
             }
-            else
-            {
-                return (await context.Events.ToListAsync())
-                .Where(rec => rec.EventName.Contains(model.EventName))
-                .Select(CreateModel)
-                .ToList();
-            }
         }
 
-        // Получение события по id или наименованию
-        public async Task<Event> GetElement(Event model)
+		/// <summary>
+		/// Метод для получения мероприятия по Id или наименованию
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task<Event?> GetElement(Event model)
         {
             if (model == null)
             {
@@ -71,10 +81,14 @@ namespace ElectronicBoard.Services.Implements
             return component != null ? CreateModel(component) : null;
         }
 
-        // Добавление события
-        public async Task Insert(Event model)
+		/// <summary>
+		/// Метод для добавления мероприятия
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Insert(Event model)
         {
-            var ev = GetElement(model);
+            var ev = await GetElement(model);
             if (ev == null)
             {
                 using var context = new ElectronicBoardDatabase();
@@ -84,8 +98,12 @@ namespace ElectronicBoard.Services.Implements
             else throw new Exception("Мероприятие с таким наименованием уже существует");
         }
 
-        // Редактирование данных о событии
-        public async Task Update(Event model)
+		/// <summary>
+		/// Метод для редактирования мероприятия
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Update(Event model)
         {
             using var context = new ElectronicBoardDatabase();
             var element = await context.Events.FirstOrDefaultAsync(rec => rec.Id == model.Id);
@@ -102,8 +120,12 @@ namespace ElectronicBoard.Services.Implements
 			else throw new Exception("Мероприятие с таким наименованием уже существует");
         }
 
-        // Удаление события
-        public async Task Delete(Event model)
+		/// <summary>
+		/// Метод для удаления мероприятия
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Delete(Event model)
         {
             using var context = new ElectronicBoardDatabase();
             using var transaction = await context.Database.BeginTransactionAsync();
@@ -184,7 +206,7 @@ namespace ElectronicBoard.Services.Implements
                 throw;
             }
         }
-        private static Event CreateModel(Event model, Event event_)
+        public Event CreateModel(Event model, Event event_)
         {
             event_.EventName = model.EventName;
             event_.EventPlace = model.EventPlace;

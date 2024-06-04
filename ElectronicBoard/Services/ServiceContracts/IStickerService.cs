@@ -2,24 +2,58 @@
 
 namespace ElectronicBoard.Services.ServiceContracts
 {
+	/// <summary>
+	/// Интерфейс для взаимодействия с сущностью "Стикер"
+	/// </summary>
 	public interface IStickerService
 	{
-		// Получение всего списка стикеров
+		/// <summary>
+		/// Метод для получения списка стикеров
+		/// </summary>
+		/// <returns></returns>
 		public Task<List<Sticker>> GetFullList();
 
-		// Получение стикеров по id элемента (!!!)
+		/// <summary>
+		/// Метод для получения списка стикеров по названию и Id элемента
+		/// </summary>
+		/// <param name="name_element"></param>
+		/// <param name="id"></param>
+		/// <returns></returns>
 		public Task<List<Sticker>> GetFilteredList(string name_element, int id);
 
-		// Получение стикера по id
+		/// <summary>
+		/// Метод для получения стикера по Id
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task<Sticker> GetElement(Sticker model);
 
-		// Добавление стикера
+		/// <summary>
+		/// Метод для добавления стикера
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Insert(Sticker model);
 
-		// Редактирование данных о стикере
+		/// <summary>
+		/// Метод для редактирования стикера
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Update(Sticker model);
-		// Удаление стикера
+
+		/// <summary>
+		/// Метод для удаления стикера
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public Task Delete(Sticker model);
+
+		/// <summary>
+		/// Метод для создания модели стикера
+		/// </summary>
+		/// <param name="sticker"></param>
+		/// <returns></returns>
 		public Sticker CreateModel(Sticker sticker);
 	}
 }

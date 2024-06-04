@@ -1,15 +1,20 @@
 ﻿using ElectronicBoard.Models;
 using ElectronicBoard.Services.ServiceContracts;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using File = ElectronicBoard.Models.File;
 
 namespace ElectronicBoard.Services.Implements
 {
-    public class FileService : IFileService
+	/// <summary>
+	/// Класс для взаимодействия с сущностью "Файл"
+	/// </summary>
+	public class FileService : IFileService
     {
-        // Получение всего списка файлов
-        public async Task<List<File>> GetFullList()
+		/// <summary>
+		/// Метод для получения списка файлов
+		/// </summary>
+		/// <returns></returns>
+		public async Task<List<File>> GetFullList()
         {
             using var context = new ElectronicBoardDatabase();
             return (await context.Files.ToListAsync())
@@ -17,12 +22,17 @@ namespace ElectronicBoard.Services.Implements
             .ToList();
         }
 
-        // Получение файлов по id элемента
-        public async Task<List<File>> GetFilteredList(string name_element, int id)
+		/// <summary>
+		/// Метод для получения списка файлов по названию и Id элемента, к которому прикреплен файл
+		/// </summary>
+		/// <param name="name_element"></param>
+		/// <param name="id"></param>
+		/// <returns></returns>
+		public async Task<List<File>> GetFilteredList(string name_element, int id)
         {
             if (id < 0)
             {
-                return null;
+                return new List<File>();
             }
 
             using var context = new ElectronicBoardDatabase();
@@ -71,12 +81,16 @@ namespace ElectronicBoard.Services.Implements
                     .ToList();
 
                 default:
-                    return null;
-            }
+                    return new List<File>();
+			}
         }
 
-        // Получение файла по id или названию
-        public async Task<File> GetElement(File model)
+		/// <summary>
+		/// Метод для получения файла по Id или названию
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task<File?> GetElement(File model)
         {
             if (model == null)
             {
@@ -88,15 +102,23 @@ namespace ElectronicBoard.Services.Implements
             return component != null ? CreateModel(component) : null;
         }
 
-        // Добавление файла
-        public async Task Insert(File model)
+		/// <summary>
+		/// Метод для добавления файла
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Insert(File model)
         {
             using var context = new ElectronicBoardDatabase();
             var file = await context.Files.AddAsync(CreateModel(model, new File()));
             await context.SaveChangesAsync();
-        }
+		}
 
-        // Редактирование данных о файле
+        /// <summary>
+		/// Метод для редактирования файла
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
         public async Task Update(File model)
         {
             using var context = new ElectronicBoardDatabase();
@@ -109,8 +131,12 @@ namespace ElectronicBoard.Services.Implements
             await context.SaveChangesAsync();
         }
 
-        // Удаление элемента
-        public async Task Delete(File model)
+		/// <summary>
+		/// Метод для удаления файла
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Delete(File model)
         {
             using var context = new ElectronicBoardDatabase();
             var element = await context.Files.FirstOrDefaultAsync(rec => rec.Id == model.Id);
@@ -124,7 +150,32 @@ namespace ElectronicBoard.Services.Implements
                 throw new Exception("Файл не найден");
             }
         }
-        private static File CreateModel(File model, File file)
+
+		/// <summary>
+		/// Метод для создания модели файла
+		/// </summary>
+		/// <param name="file"></param>
+		/// <returns></returns>
+		public File CreateModel(File file)
+		{
+			return new File
+			{
+				Id = file.Id,
+
+				FileName = file.FileName,
+				Path = file.Path,
+				ContentType = file.ContentType,
+
+				StageId = file.StageId,
+				EventId = file.EventId,
+				ArticleId = file.ArticleId,
+				ParticipantId = file.ParticipantId,
+				GrantId = file.GrantId,
+				ProjectId = file.ProjectId,
+				SimpleElementId = file.SimpleElementId
+			};
+		}
+		private static File CreateModel(File model, File file)
         {
             file.FileName = model.FileName;
             file.Path = model.Path;
@@ -139,25 +190,6 @@ namespace ElectronicBoard.Services.Implements
             file.SimpleElementId = model.SimpleElementId;
 
             return file;
-        }
-        public File CreateModel(File file)
-        {
-            return new File
-            {
-                Id = file.Id,
-
-                FileName = file.FileName,
-                Path = file.Path,
-                ContentType = file.ContentType,
-
-                StageId = file.StageId,
-                EventId = file.EventId,
-                ArticleId = file.ArticleId,
-                ParticipantId = file.ParticipantId,
-                GrantId = file.GrantId,
-                ProjectId = file.ProjectId,
-                SimpleElementId = file.SimpleElementId
-            };
         }
     }
 }

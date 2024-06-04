@@ -1,19 +1,27 @@
 ﻿using ElectronicBoard.Models;
 using ElectronicBoard.Services.ServiceContracts;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel;
 
 namespace ElectronicBoard.Services.Implements
 {
-    public class BoardService : IBoardService
+	/// <summary>
+	/// Класс для взаимодействия с сущностью "Доска"
+	/// </summary>
+	public class BoardService : IBoardService
     {
         private IBlockService blockService { get; set; }
 		public BoardService(IBlockService _blockService)
         {
             blockService = _blockService;
 		}
-        // Получение всего списка досок
-        public async Task<List<Board>> GetFullList()
+
+		public BoardService(){}
+
+		/// <summary>
+		/// Метод для получения списка досок
+		/// </summary>
+		/// <returns></returns>
+		public async Task<List<Board>> GetFullList()
         {
             using var context = new ElectronicBoardDatabase();
             return (await context.Boards.ToListAsync())
@@ -21,25 +29,16 @@ namespace ElectronicBoard.Services.Implements
             .ToList();
         }
 
-        // Получение списка досок по названию
-        public async Task<List<Board>> GetFilteredList(Board model)
-        {
-            if (model == null)
-            {
-                return null;
-            }
-            using var context = new ElectronicBoardDatabase();
-            return (await context.Boards.ToListAsync())
-            .Where(rec => rec.BoardName.Contains(model.BoardName))
-            .Select(CreateModel)
-            .ToList();
-        }
-
-        public async Task<List<Board>> GetParticipantBoards(int participantId) 
+		/// <summary>
+		/// Метод для получения списка досок участника по Id участника
+		/// </summary>
+		/// <param name="participantId"></param>
+		/// <returns></returns>
+		public async Task<List<Board>> GetParticipantBoards(int participantId) 
         {
 			if (participantId < 1)
             {
-                return null;
+                return new List<Board>();
             }
             else 
             {
@@ -50,17 +49,25 @@ namespace ElectronicBoard.Services.Implements
                 List<Board> boards = new List<Board>();
                 foreach (var block in block_part)
                 {
-                    Block this_block = await blockService.GetElement(new Block
+                    Block? this_block = await blockService.GetElement(new Block
                     { Id = block.BlockId });
 
-                    boards.Add(await GetElement(new Board { Id = this_block.BoardId }));
+					if (this_block != null) 
+					{
+						var board = await GetElement(new Board { Id = this_block.BoardId });
+						if (board != null) boards.Add(board); 
+					}
                 }
                 return boards;
 			}
 		}
 
-        // Получение доски по id или названию
-        public async Task<Board> GetElement(Board model)
+		/// <summary>
+		/// Метод для получения доски по Id или названию
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task<Board?> GetElement(Board model)
         {
             if (model == null)
             {
@@ -72,9 +79,12 @@ namespace ElectronicBoard.Services.Implements
             return component != null ? CreateModel(component) : null;
         }
 
-        // Добавление доски 
-        // Добавлять два предопределенных блока: участники и мероприятия
-        public async Task Insert(Board model)
+		/// <summary>
+		/// Метод для добавления доски
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Insert(Board model)
         {
 			using var context = new ElectronicBoardDatabase();
 			var component = await context.Boards
@@ -84,45 +94,40 @@ namespace ElectronicBoard.Services.Implements
                 await context.Boards.AddAsync(CreateModel(model, new Board()));
                 await context.SaveChangesAsync();
 
-				Board new_board = await GetElement(new Board
+				Board? new_board = await GetElement(new Board
 				{
 					BoardName = model.BoardName,
 					BoardThematics = model.BoardThematics
 				});
+				if (new_board != null)
+				{
+					// Добавление блока участников
+					await blockService.Insert(new Block
+					{
+						BoardId = new_board.Id,
+						BlockName = "Участники",
+						VisibilityOpening = true
+					});
 
-				// Добавление блока участников
-				await blockService.Insert(new Block
-				{
-					BoardId = new_board.Id,
-					BlockName = "Участники",
-					VisibilityOpening = true
-				});
-				Block part_block = await blockService.GetElement(new Block
-				{
-					BoardId = new_board.Id,
-					BlockName = "Участники",
-					VisibilityOpening = true
-				});
-
-				// Добавление блока мероприятий
-				await blockService.Insert(new Block
-				{
-					BoardId = new_board.Id,
-					BlockName = "Мероприятия",
-					VisibilityOpening = true
-				});
-				Block event_block = await blockService.GetElement(new Block
-				{
-					BoardId = new_board.Id,
-					BlockName = "Мероприятия",
-					VisibilityOpening = true
-				});
+					// Добавление блока мероприятий
+					await blockService.Insert(new Block
+					{
+						BoardId = new_board.Id,
+						BlockName = "Мероприятия",
+						VisibilityOpening = true
+					});
+				}
+				else throw new Exception("Ошибка добавления доски");
 			}
             else throw new Exception("Доска с таким названием уже существует");
 		}
 
-        // Редактирование данных о доске
-        public async Task Update(Board model)
+		/// <summary>
+		/// Метод для редактирования доски
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Update(Board model)
         {
             using var context = new ElectronicBoardDatabase();
             var element = await context.Boards.FirstOrDefaultAsync(rec => rec.Id == model.Id);
@@ -139,8 +144,12 @@ namespace ElectronicBoard.Services.Implements
             }
         }
 
-        // Удаление доски
-        public async Task Delete(Board model)
+		/// <summary>
+		/// Метод для удаления доски
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Delete(Board model)
         {
             using var context = new ElectronicBoardDatabase();
             using var transaction = await context.Database.BeginTransactionAsync();
@@ -181,6 +190,11 @@ namespace ElectronicBoard.Services.Implements
             }
         }
 
+		/// <summary>
+		/// Метод для создания общей доски
+		/// </summary>
+		/// <param name="part"></param>
+		/// <returns></returns>
 		public async Task CreateMainBoard(Participant part)
 		{
 			List<Board> boards = await GetFullList();
@@ -196,56 +210,59 @@ namespace ElectronicBoard.Services.Implements
 				new Board()));
 				await context.SaveChangesAsync();
 
-				Board new_board = await GetElement(new Board
+				Board? new_board = await GetElement(new Board
 				{
 					BoardName = "Общая доска",
 					BoardThematics = "общая доска научной группы"
 				});
-				Program.MainBoard = new_board;
-				// Добавить блоки: мероприятия, участники, гранты, проекты
+				if (new_board != null)
+				{
+					Program.MainBoard = new_board;
 
-				// Добавление блока участников
-				await blockService.Insert(new Block
-				{
-					BoardId = new_board.Id,
-					BlockName = "Участники",
-					VisibilityOpening = true
-				});
-				Block part_block = await blockService.GetElement(new Block
-				{
-					BoardId = new_board.Id,
-					BlockName = "Участники",
-					VisibilityOpening = true
-				});
-				await blockService.AddOrRemoveElement(part, part_block.Id);
+					// Добавление блока участников
+					await blockService.Insert(new Block
+					{
+						BoardId = new_board.Id,
+						BlockName = "Участники",
+						VisibilityOpening = true
+					});
+					Block? part_block = await blockService.GetElement(new Block
+					{
+						BoardId = new_board.Id,
+						BlockName = "Участники",
+						VisibilityOpening = true
+					});
+					if (part_block != null) await blockService.AddOrRemoveElement(part, part_block.Id);
 
-				// Добавление блока мероприятий
-				await blockService.Insert(new Block
-				{
-					BoardId = new_board.Id,
-					BlockName = "Мероприятия",
-					VisibilityOpening = true
-				});
+					// Добавление блока мероприятий
+					await blockService.Insert(new Block
+					{
+						BoardId = new_board.Id,
+						BlockName = "Мероприятия",
+						VisibilityOpening = true
+					});
 
-				// Добавление блока грантов
-				await blockService.Insert(new Block
-				{
-					BoardId = new_board.Id,
-					BlockName = "Гранты",
-					VisibilityOpening = true
-				});
+					// Добавление блока грантов
+					await blockService.Insert(new Block
+					{
+						BoardId = new_board.Id,
+						BlockName = "Гранты",
+						VisibilityOpening = true
+					});
 
-				// Добавление блока проектов
-				await blockService.Insert(new Block
-				{
-					BoardId = new_board.Id,
-					BlockName = "Проекты",
-					VisibilityOpening = true
-				});
+					// Добавление блока проектов
+					await blockService.Insert(new Block
+					{
+						BoardId = new_board.Id,
+						BlockName = "Проекты",
+						VisibilityOpening = true
+					});
+				}
+				else throw new Exception("Ошибка создания общей доски");
 			}
 		}
 
-		private static Board CreateModel(Board model, Board board)
+		public Board CreateModel(Board model, Board board)
         {
             board.BoardName = model.BoardName;
             board.BoardThematics = model.BoardThematics;
