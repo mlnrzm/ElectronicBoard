@@ -9,7 +9,10 @@ using System.Globalization;
 
 namespace ElectronicBoard.Controllers
 {
-	//[Authorize]
+	/// <summary>
+	/// Контроллер, обрабатывающий запросы касающиеся досок
+	/// </summary>
+	[Authorize]
 	public class BoardController : Controller
     {
 		private readonly ILogger<BoardController> _logger;
@@ -33,50 +36,73 @@ namespace ElectronicBoard.Controllers
 			idn = new IdnMapping();
 		}
 
-		// Отображение доски
-        public async Task<IActionResult> Index(Board board)
+		/// <summary>
+		/// Метод для отображения страницы с информацией о доске
+		/// </summary>
+		/// <param name="board"></param>
+		/// <returns></returns>
+		public async Task<IActionResult> Index(Board board)
         {
-			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
-
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
-
-			Board find_board = await boardService.GetElement(new Board { Id = board.Id, BoardName = idn.GetUnicode(board.BoardName) });
-
-			if (find_board != null)
+			try
 			{
-				List<Block> added_blocks = new List<Block>();
-				foreach (var block in await blockService.GetFilteredList(new Block { BoardId = find_board.Id })) { added_blocks.Add(block); }
+				IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant? activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
 
-				return View(new Board
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
+
+				Board? find_board = await boardService.GetElement(new Board { Id = board.Id, BoardName = idn.GetUnicode(board.BoardName) });
+
+				if (find_board != null)
 				{
-					Id = find_board.Id,
-					BoardName = find_board.BoardName,
-					BoardThematics = find_board.BoardThematics,
-					Blocks = added_blocks
-				});
+					List<Block> added_blocks = new List<Block>();
+					foreach (var block in await blockService.GetFilteredList(new Block { BoardId = find_board.Id })) { added_blocks.Add(block); }
+
+					return View(new Board
+					{
+						Id = find_board.Id,
+						BoardName = find_board.BoardName,
+						BoardThematics = find_board.BoardThematics,
+						Blocks = added_blocks
+					});
+				}
+				else
+				{
+					_notyf.Error("Ошибка");
+					return Redirect("javascript: history.go(-1)");
+				}
 			}
-			else 
+			catch (Exception ex)
 			{
-				_notyf.Error("Ошибка");
+				_notyf.Error(ex.Message);
 				return Redirect("javascript: history.go(-1)");
 			}
 		}
 
-		// Добавление доски
+		/// <summary>
+		/// Метод для отображения страницы добавления доски
+		/// </summary>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task<IActionResult> AddBoard() 
 		{
-			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
+			try
+			{
+				IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant? activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
 
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
 
-			return View();
+				return View();
+			}
+			catch (Exception ex)
+			{
+				_notyf.Error(ex.Message);
+				return Redirect("javascript: history.go(-1)");
+			}
 		}
 		[HttpPost]
 		public async Task AddBoard(string name, string thematic)
@@ -87,16 +113,16 @@ namespace ElectronicBoard.Controllers
 				{
 					// Добавление и отображение доски
 					await boardService.Insert(new Board { BoardName = name, BoardThematics = thematic });
-					Board new_board = await boardService.GetElement(new Board
+					Board? new_board = await boardService.GetElement(new Board
 					{
 						BoardName = name,
 						BoardThematics = thematic
 					});
 					// Добавление участника на доску: найти блок с участниками новой доски и прикрепить участника
-					Block part_block = await blockService.GetElement(new Block { BoardId = new_board.Id, BlockName = "Участники" });
+					Block? part_block = await blockService.GetElement(new Block { BoardId = new_board.Id, BlockName = "Участники" });
 
-					IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
-					Participant part = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+					IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+					Participant? part = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
 
 					await blockService.AddOrRemoveElement(part, part_block.Id);
 
@@ -118,26 +144,38 @@ namespace ElectronicBoard.Controllers
 			}
 		}
 
-		// Редактирование доски
+		/// <summary>
+		/// Метод для отображения страницы редактирования доски
+		/// </summary>
+		/// <param name="board"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task<IActionResult> UpdBoard(Board board)
 		{
-			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
-
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
-
-			Board find_board = await boardService.GetElement(new Board { Id = board.Id, BoardName = idn.GetUnicode(board.BoardName) });
-			
-			if(find_board != null) 
-			{ 
-				return View(find_board);
-			}
-			else
+			try
 			{
-				_notyf.Error("Ошибка");
+				IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant? activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
+
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
+
+				Board? find_board = await boardService.GetElement(new Board { Id = board.Id, BoardName = idn.GetUnicode(board.BoardName) });
+
+				if (find_board != null)
+				{
+					return View(find_board);
+				}
+				else
+				{
+					_notyf.Error("Ошибка");
+					return Redirect("javascript: history.go(-1)");
+				}
+			}
+			catch (Exception ex)
+			{
+				_notyf.Error(ex.Message);
 				return Redirect("javascript: history.go(-1)");
 			}
 		}
@@ -148,7 +186,7 @@ namespace ElectronicBoard.Controllers
 			{
 				try
 				{
-					Board find_board = await boardService.GetElement(new Board { Id = Convert.ToInt32(id) });
+					Board? find_board = await boardService.GetElement(new Board { Id = Convert.ToInt32(id) });
 					if (find_board != null)
 					{
 						// Редактирование и отображение доски
@@ -183,13 +221,17 @@ namespace ElectronicBoard.Controllers
 			}
 		}
 
-		// Удаление доски
+		/// <summary>
+		/// Метод для удаления доски
+		/// </summary>
+		/// <param name="boardId"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task DeleteBoard(string boardId)
 		{
 			if (!string.IsNullOrEmpty(boardId))
 			{
-				Board find_board = await boardService.GetElement(new Board { Id = Convert.ToInt32(boardId) });
+				Board? find_board = await boardService.GetElement(new Board { Id = Convert.ToInt32(boardId) });
 				if (find_board != null)
 				{
 					try
@@ -216,22 +258,27 @@ namespace ElectronicBoard.Controllers
 			}
 		}
 
-		// Покинуть доску
+		/// <summary>
+		/// Метод для выхода участника из доски
+		/// </summary>
+		/// <param name="boardId"></param>
+		/// <param name="partId"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task ExitBoard(string boardId, string partId)
 		{
 			if (!string.IsNullOrEmpty(boardId) && !string.IsNullOrEmpty(partId))
 			{
-				Board find_board = await boardService.GetElement(new Board { Id = Convert.ToInt32(boardId) });
-				Participant find_participant = await participantService.GetElement(new Participant { Id = Convert.ToInt32(partId) });
+				Board? find_board = await boardService.GetElement(new Board { Id = Convert.ToInt32(boardId) });
+				Participant? find_participant = await participantService.GetElement(new Participant { Id = Convert.ToInt32(partId) });
 				if (find_board != null && find_participant != null)
 				{
 
 					try
 					{
 						// Метод отвязки участника от доски
-						Block block_part = await blockService.GetElement(new Block { BlockName = "Участники", BoardId = find_board.Id });
-						Participant part = await participantService.GetElement(new Participant { Id = find_participant.Id });
+						Block? block_part = await blockService.GetElement(new Block { BlockName = "Участники", BoardId = find_board.Id });
+						Participant? part = await participantService.GetElement(new Participant { Id = find_participant.Id });
 						if (block_part != null && part != null)
 						{
 							await blockService.AddOrRemoveElement(part, block_part.Id);

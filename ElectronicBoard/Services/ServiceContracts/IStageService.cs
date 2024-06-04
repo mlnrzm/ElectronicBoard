@@ -25,7 +25,7 @@ namespace ElectronicBoard.Services.ServiceContracts
 		/// </summary>
 		/// <param name="model"></param>
 		/// <returns></returns>
-		public Task<Stage> GetElement(Stage model);
+		public Task<Stage?> GetElement(Stage model);
 
 		/// <summary>
 		/// Метод для добавления этапа

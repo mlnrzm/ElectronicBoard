@@ -1,14 +1,33 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel;
-
-namespace ElectronicBoard.Models
+﻿namespace ElectronicBoard.Models
 {
-    public class BlockParticipant
+	/// <summary>
+	/// Класс-связь сущности "Блок" и "Участник"
+	/// </summary>
+	public class BlockParticipant
     {
-        public int Id { get; set; }
-        public int ParticipantId { get; set; }
-        public int BlockId { get; set; }
-        public virtual Participant Participant { get; set; }
-        public virtual Block Block { get; set; }
+		/// <summary>
+		/// Идентификатор
+		/// </summary>
+		public int Id { get; set; }
+
+		/// <summary>
+		/// Идентификатор участника
+		/// </summary>
+		public int ParticipantId { get; set; }
+
+		/// <summary>
+		/// Идентификатор блока
+		/// </summary>
+		public int BlockId { get; set; }
+
+		/// <summary>
+		/// Участник
+		/// </summary>
+		public virtual Participant Participant { get; set; }
+
+		/// <summary>
+		/// Блок
+		/// </summary>
+		public virtual Block Block { get; set; }
     }
 }

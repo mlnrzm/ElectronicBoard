@@ -4,16 +4,22 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ElectronicBoard.Services.Implements
 {
+	/// <summary>
+	/// Класс для взаимодействия с сущностью "Пользователь"
+	/// </summary>
 	public class UserLDAPService : IUserLDAPService
 	{
 		private IConnectionAccountsLDAP con { get; set; }
 		public UserLDAPService(IConnectionAccountsLDAP _conn) { con = _conn; }
 
-		public UserLDAPService()
-		{
-		}
+		public UserLDAPService() {}
 
-		public async Task<UserLDAP> GetElement(UserLDAP model)
+		/// <summary>
+		/// Метод для получения аккаунта по логину
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task<UserLDAP?> GetElement(UserLDAP model)
 		{
 			await UpdateAccounts();
 			if (model == null)
@@ -25,17 +31,60 @@ namespace ElectronicBoard.Services.Implements
 			.FirstOrDefaultAsync(rec => rec.UserLogin.Contains(model.UserLogin));
 			return component != null ? CreateModel(component) : null;
 		}
+
+		/// <summary>
+		/// Метод для добавления аккаунта
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public async Task Insert(UserLDAP model)
 		{
 			using var context = new ElectronicBoardDatabase();
 			await context.UserLDAPs.AddAsync(CreateModel(model, new UserLDAP()));
 			await context.SaveChangesAsync();
 		}
+
+		/// <summary>
+		/// Метод для удаления аккаунта
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public async Task Delete(UserLDAP model)
 		{
 			using var context = new ElectronicBoardDatabase();
 			context.UserLDAPs.Remove(model);
 			await context.SaveChangesAsync();
+		}
+
+		/// <summary>
+		/// Метод для очистки таблицы с пользователями
+		/// </summary>
+		public void RemoveTable()
+		{
+			using (var context = new ElectronicBoardDatabase())
+			{
+				context.UserLDAPs.RemoveRange(context.UserLDAPs);
+				context.SaveChanges();
+			}
+		}
+
+		/// <summary>
+		/// Метод для обновления списка аккаунтов
+		/// </summary>
+		private async Task UpdateAccounts() 
+		{
+			double clock = 0;
+			if (Program.DateUpdate != null)
+			{
+				TimeSpan time = (TimeSpan)(DateTime.Now - Program.DateUpdate);
+				clock = time.TotalHours;
+			}
+			if (clock > 8 || Program.DateUpdate == null)
+			{
+				RemoveTable();
+				await con.ConnectionLDAP(this);
+				Program.DateUpdate = DateTime.Now;
+			}
 		}
 		public UserLDAP CreateModel(UserLDAP model, UserLDAP user)
 		{
@@ -54,29 +103,6 @@ namespace ElectronicBoard.Services.Implements
 				UserLogin = user.UserLogin,
 				UserPassword = user.UserPassword
 			};
-		}
-		public void RemoveTable()
-		{
-			using (var context = new ElectronicBoardDatabase())
-			{
-				context.UserLDAPs.RemoveRange(context.UserLDAPs);
-				context.SaveChanges();
-			}
-		}
-		private async Task UpdateAccounts() 
-		{
-			double clock = 0;
-			if (Program.DateUpdate != null)
-			{
-				TimeSpan time = (TimeSpan)(DateTime.Now - Program.DateUpdate);
-				clock = time.TotalHours;
-			}
-			if (clock > 8 || Program.DateUpdate == null)
-			{
-				RemoveTable();
-				await con.ConnectionLDAP(this);
-				Program.DateUpdate = DateTime.Now;
-			}
 		}
 	}
 }

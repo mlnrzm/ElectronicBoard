@@ -4,9 +4,14 @@ using File = ElectronicBoard.Models.File;
 using ElectronicBoard.Services.ServiceContracts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ElectronicBoard.Controllers
 {
+	/// <summary>
+	/// Контроллер, обрабатывающий запросы касающиеся этапов
+	/// </summary>
+	[Authorize]
 	public class StageController : Controller
 	{
 		private readonly ILogger<StageController> _logger;
@@ -36,85 +41,111 @@ namespace ElectronicBoard.Controllers
 			_userManager = userManager;
 			participantService = _participantService;
 		}
-		// Отображение страницы с информацией о статье
+
+		/// <summary>
+		/// Метод для отображения страницы с информацией об этапе
+		/// </summary>
+		/// <param name="project"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task<IActionResult> Index(string stageId)
 		{
-			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
-
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
-
-			int StageId = Convert.ToInt32(stageId);
-
-			Stage find_stage = await stageService.GetElement(new Stage { Id = StageId });
-
-			if (find_stage != null)
+			try
 			{
-				// Конвертация изображения
-				if (find_stage.Picture.Length > 0)
+				IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant? activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
+
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
+
+				int StageId = Convert.ToInt32(stageId);
+
+				Stage? find_stage = await stageService.GetElement(new Stage { Id = StageId });
+
+				if (find_stage != null)
 				{
-					ViewBag.Picture = "data:image/jpg;base64," + Convert.ToBase64String(find_stage.Picture);
+					// Конвертация изображения
+					if (find_stage.Picture.Length > 0)
+					{
+						ViewBag.Picture = "data:image/jpg;base64," + Convert.ToBase64String(find_stage.Picture);
+					}
+
+					// Файлы
+					List<File> files = await fileService.GetFilteredList("stage", StageId);
+					ViewBag.Files = files;
+
+					// Проект, в котором находится этап
+					Project? find_project = await projectService.GetElement(new Project { Id = find_stage.ProjectId });
+					ViewBag.Project = find_project;
+
+					// Блок, на котором находится проект
+					Block? find_block = await blockService.GetElement(new Block { Id = find_project.BlockId });
+					ViewBag.Block = find_block;
+
+					// Доска, на которой находится блок
+					Board? board = await boardService.GetElement(new Board { Id = find_block.BoardId });
+					List<Block> added_blocks = new List<Block>();
+					foreach (var b in await blockService.GetFilteredList(new Block { BoardId = board.Id })) { added_blocks.Add(b); }
+					ViewBag.Board = new Board
+					{
+						Id = board.Id,
+						BoardName = board.BoardName,
+						BoardThematics = board.BoardThematics,
+						Blocks = added_blocks
+					};
+					return View(find_stage);
 				}
-
-				// Файлы
-				List<File> files = await fileService.GetFilteredList("stage", StageId);
-				ViewBag.Files = files;
-
-				// Проект, в котором находится этап
-				Project find_project = await projectService.GetElement(new Project { Id = find_stage.ProjectId });
-				ViewBag.Project = find_project;
-
-				// Блок, на котором находится проект
-				Block find_block = await blockService.GetElement(new Block { Id = find_project.BlockId });
-				ViewBag.Block = find_block;
-
-				// Доска, на которой находится блок
-				Board board = await boardService.GetElement(new Board { Id = find_block.BoardId });
-				List<Block> added_blocks = new List<Block>();
-				foreach (var b in await blockService.GetFilteredList(new Block { BoardId = board.Id })) { added_blocks.Add(b); }
-				ViewBag.Board = new Board
+				else
 				{
-					Id = board.Id,
-					BoardName = board.BoardName,
-					BoardThematics = board.BoardThematics,
-					Blocks = added_blocks
-				};
-				return View(find_stage);
+					_notyf.Error("Этап не найден");
+					return Redirect("javascript: history.go(-1)");
+				}
 			}
-			else
+			catch (Exception ex)
 			{
-				_notyf.Error("Этап не найден");
+				_notyf.Error(ex.Message);
 				return Redirect("javascript: history.go(-1)");
 			}
 		}
 
-		// Добавление/создание этапа проекта
+		/// <summary>
+		/// Метод для отображения страницы добавления этапа
+		/// </summary>
+		/// <param name="blockId"></param>
+		/// <param name="projectId"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task<IActionResult> AddStage(string blockId, string projectId)
 		{
-			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
-
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
-
-			Block block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
-			Project project = await projectService.GetElement(new Project { Id = Convert.ToInt32(projectId) });
-			if (block != null && project != null)
+			try
 			{
-				// Передача id блока, на котором будет находиться проект 
-				ViewData["blockId"] = block.Id;
-				// Передача id проекта, на котором будет находиться этап
-				ViewData["projectId"] = project.Id;
-				return View();
+				IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant? activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
+
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
+
+				Block? block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				Project? project = await projectService.GetElement(new Project { Id = Convert.ToInt32(projectId) });
+				if (block != null && project != null)
+				{
+					// Передача id блока, на котором будет находиться проект 
+					ViewData["blockId"] = block.Id;
+					// Передача id проекта, на котором будет находиться этап
+					ViewData["projectId"] = project.Id;
+					return View();
+				}
+				else
+				{
+					_notyf.Error("Ошибка");
+					return Redirect("javascript: history.go(-1)");
+				}
 			}
-			else
+			catch (Exception ex)
 			{
-				_notyf.Error("Ошибка");
+				_notyf.Error(ex.Message);
 				return Redirect("javascript: history.go(-1)");
 			}
 		}
@@ -127,8 +158,8 @@ namespace ElectronicBoard.Controllers
 				&& !string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(text) && !string.IsNullOrEmpty(desc)
 				&& !string.IsNullOrEmpty(start) && !string.IsNullOrEmpty(finish) && !string.IsNullOrEmpty(status))
 			{
-				Block block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
-				Project project = await projectService.GetElement(new Project { Id = Convert.ToInt32(projectId) });
+				Block? block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				Project? project = await projectService.GetElement(new Project { Id = Convert.ToInt32(projectId) });
 				if (block != null && project != null)
 				{
 					try
@@ -164,7 +195,7 @@ namespace ElectronicBoard.Controllers
 								DateFinish = DateFinish,
 								Picture = picture
 							});
-							Stage new_stage = await stageService.GetElement(new Stage
+							Stage? new_stage = await stageService.GetElement(new Stage
 							{
 								StageName = name,
 								StageText = text,
@@ -203,35 +234,47 @@ namespace ElectronicBoard.Controllers
 			}
 		}
 
-		// Редактирование этапа проекта
+		/// <summary>
+		/// Метод для отображения страницы редактирования этапа
+		/// </summary>
+		/// <param name="stageId"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task<IActionResult> UpdStage(string stageId)
 		{
-			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
-
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
-
-			int StageId = Convert.ToInt32(stageId);
-
-			Stage find_stage = await stageService.GetElement(new Stage { Id = StageId });
-
-			if (find_stage != null)
+			try
 			{
-				Project find_project = await projectService.GetElement(new Project { Id = find_stage.ProjectId });
-				ViewData["projectId"] = find_project.Id;
+				IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant? activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
 
-				// Блок, на котором находится элемент
-				Block find_block = await blockService.GetElement(new Block { Id = find_project.BlockId });
-				ViewData["blockId"] = find_block.Id;
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
 
-				return View(find_stage);
+				int StageId = Convert.ToInt32(stageId);
+
+				Stage? find_stage = await stageService.GetElement(new Stage { Id = StageId });
+
+				if (find_stage != null)
+				{
+					Project? find_project = await projectService.GetElement(new Project { Id = find_stage.ProjectId });
+					ViewData["projectId"] = find_project.Id;
+
+					// Блок, на котором находится элемент
+					Block? find_block = await blockService.GetElement(new Block { Id = find_project.BlockId });
+					ViewData["blockId"] = find_block.Id;
+
+					return View(find_stage);
+				}
+				else
+				{
+					_notyf.Error("Ошибка");
+					return Redirect("javascript: history.go(-1)");
+				}
 			}
-			else
+			catch (Exception ex)
 			{
-				_notyf.Error("Ошибка");
+				_notyf.Error(ex.Message);
 				return Redirect("javascript: history.go(-1)");
 			}
 		}
@@ -244,9 +287,9 @@ namespace ElectronicBoard.Controllers
 				&& !string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(text) && !string.IsNullOrEmpty(desc)
 				&& !string.IsNullOrEmpty(start) && !string.IsNullOrEmpty(finish) && !string.IsNullOrEmpty(status))
 			{
-				Block block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
-				Project project = await projectService.GetElement(new Project { Id = Convert.ToInt32(projectId) });
-				Stage stage = await stageService.GetElement(new Stage { Id = Convert.ToInt32(id) });
+				Block? block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				Project? project = await projectService.GetElement(new Project { Id = Convert.ToInt32(projectId) });
+				Stage? stage = await stageService.GetElement(new Stage { Id = Convert.ToInt32(id) });
 
 				if (block != null && project != null && stage != null)
 				{
@@ -278,7 +321,8 @@ namespace ElectronicBoard.Controllers
 						}
 						else if (!del)
 						{
-							picture = (await stageService.GetElement(new Stage { Id = Id })).Picture;
+							var stage_ = await stageService.GetElement(new Stage { Id = Id });
+							if (stage_ != null) picture = stage_.Picture;
 						}
 
 						DateTime DateStart = DateTime.ParseExact(start, "yyyy-M-dd", null);
@@ -299,7 +343,7 @@ namespace ElectronicBoard.Controllers
 								Status = status,
 								Picture = picture
 							});
-							Stage this_stage = await stageService.GetElement(new Stage
+							Stage? this_stage = await stageService.GetElement(new Stage
 							{
 								StageName = name,
 								ProjectId = ProjectId,
@@ -339,15 +383,22 @@ namespace ElectronicBoard.Controllers
 			}
 		}
 
-		// Удаление этапа проекта
+
+		/// <summary>
+		/// Метод для удаления этапа
+		/// </summary>
+		/// <param name="id"></param>
+		/// <param name="blockId"></param>
+		/// <param name="projectId"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task DeleteStage(string id, string blockId, string projectId)
 		{
 			if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(projectId) && !string.IsNullOrEmpty(blockId))
 			{
-				Block block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
-				Project project = await projectService.GetElement(new Project { Id = Convert.ToInt32(projectId) });
-				Stage stage = await stageService.GetElement(new Stage { Id = Convert.ToInt32(id) });
+				Block? block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				Project? project = await projectService.GetElement(new Project { Id = Convert.ToInt32(projectId) });
+				Stage? stage = await stageService.GetElement(new Stage { Id = Convert.ToInt32(id) });
 
 				if (block != null && project != null && stage != null)
 				{

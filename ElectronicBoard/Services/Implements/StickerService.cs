@@ -5,10 +5,16 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace ElectronicBoard.Services.Implements
 {
-    public class StickerService : IStickerService
+	/// <summary>
+	/// Класс для взаимодействия с сущностью "Стикер"
+	/// </summary>
+	public class StickerService : IStickerService
     {
-        // Получение всего списка стикеров
-        public async Task<List<Sticker>> GetFullList()
+		/// <summary>
+		/// Метод для получения списка стикеров
+		/// </summary>
+		/// <returns></returns>
+		public async Task<List<Sticker>> GetFullList()
         {
             using var context = new ElectronicBoardDatabase();
             return (await context.Stickers.ToListAsync())
@@ -16,12 +22,17 @@ namespace ElectronicBoard.Services.Implements
             .ToList();
         }
 
-        // Получение стикеров по id элемента (!!!)
-        public async Task<List<Sticker>> GetFilteredList(string name_element, int id)
+		/// <summary>
+		/// Метод для получения списка стикеров по названию и Id элемента
+		/// </summary>
+		/// <param name="name_element"></param>
+		/// <param name="id"></param>
+		/// <returns></returns>
+		public async Task<List<Sticker>> GetFilteredList(string name_element, int id)
         {
             if (id < 0)
             {
-                return null;
+                return new List<Sticker>();
             }
 
             using var context = new ElectronicBoardDatabase();
@@ -58,12 +69,16 @@ namespace ElectronicBoard.Services.Implements
                     .ToList();
 
                 default:
-                    return null;
-            }
+                    return new List<Sticker>();
+			}
         }
 
-        // Получение стикера по id
-        public async Task<Sticker> GetElement(Sticker model)
+		/// <summary>
+		/// Метод для получения стикера по Id
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task<Sticker?> GetElement(Sticker model)
         {
             if (model == null)
             {
@@ -75,16 +90,24 @@ namespace ElectronicBoard.Services.Implements
             return component != null ? CreateModel(component) : null;
         }
 
-        // Добавление стикера
-        public async Task Insert(Sticker model)
+		/// <summary>
+		/// Метод для добавления стикера
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Insert(Sticker model)
         {
             using var context = new ElectronicBoardDatabase();
             await context.Stickers.AddAsync(CreateModel(model, new Sticker()));
             await context.SaveChangesAsync();
         }
 
-        // Редактирование данных о стикере
-        public async Task Update(Sticker model)
+		/// <summary>
+		/// Метод для редактирования стикера
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Update(Sticker model)
         {
             using var context = new ElectronicBoardDatabase();
             var element = await context.Stickers.FirstOrDefaultAsync(rec => rec.Id == model.Id);
@@ -96,8 +119,12 @@ namespace ElectronicBoard.Services.Implements
             await context.SaveChangesAsync();
         }
 
-        // Удаление стикера
-        public async Task Delete(Sticker model)
+		/// <summary>
+		/// Метод для удаления стикера
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Delete(Sticker model)
         {
             using var context = new ElectronicBoardDatabase();
             var element = await context.Stickers.FirstOrDefaultAsync(rec => rec.Id == model.Id);
@@ -111,6 +138,7 @@ namespace ElectronicBoard.Services.Implements
                 throw new Exception("Стикер не найден");
             }
         }
+
         public Sticker CreateModel(Sticker model, Sticker sticker)
         {
             sticker.StickerDescription = model.StickerDescription;

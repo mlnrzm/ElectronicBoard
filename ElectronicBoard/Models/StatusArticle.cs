@@ -1,5 +1,8 @@
 ﻿namespace ElectronicBoard.Models
 {
+	/// <summary>
+	/// Класс-перечисление вариантов статуса статьи
+	/// </summary>
 	public enum StatusArticle
 	{
 		Планируется = 0, 

@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Identity;
 
 namespace ElectronicBoard.Models
 {
+	/// <summary>
+	/// Класс для подключения к БД
+	/// </summary>
 	public class ElectronicBoardDatabase : IdentityDbContext<IdentityUser<int>, IdentityRole<int>, int>
 	{
 		public ElectronicBoardDatabase()

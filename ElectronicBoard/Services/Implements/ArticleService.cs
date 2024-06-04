@@ -63,8 +63,20 @@ namespace ElectronicBoard.Services.Implements
             }
             using var context = new ElectronicBoardDatabase();
 			var list = await context.Articles.ToListAsync();
-			var component = list
-            .FirstOrDefault(rec => rec.Id == model.Id);
+            Article? component = null;
+            if (model.Id > 0)
+            {
+                component = list
+                    .FirstOrDefault(rec => rec.Id == model.Id);
+            }
+            else 
+            {
+				component = list
+	                .FirstOrDefault(rec => rec.ArticleName.Contains(model.ArticleName) &&
+	                rec.ArticlePlaceOfPublication.Contains(model.ArticlePlaceOfPublication) &&
+	                rec.ArticleStatus == model.ArticleStatus);
+			}
+
             return component != null ? CreateModel(component) : null;
         }
 

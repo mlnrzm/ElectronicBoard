@@ -154,6 +154,7 @@ namespace ElectronicBoard.Controllers
 		[HttpPost]
 		public async Task Enter(string login, string password)
 		{
+			/*
 			var user_app = await _userManager.FindByNameAsync(login);
 
 			IEnumerable<Claim> claims = await _userManager.GetClaimsAsync(user_app);
@@ -167,7 +168,8 @@ namespace ElectronicBoard.Controllers
 
 			Response.Redirect($"/board/index?" +
 				$"BoardName={idn.GetAscii("Общая доска")}");
-			/*
+			*/
+			
 			if (!string.IsNullOrEmpty(login) && !string.IsNullOrEmpty(password))
 			{
 				string hashedPassword = "{CRYPT}" + BCrypt.Net.BCrypt.HashPassword(password, 10);
@@ -296,7 +298,6 @@ namespace ElectronicBoard.Controllers
 				_notyf.Error("Введите логин и пароль");
 				Response.Redirect($"/participant/enter");
 			}
-			*/
 		}
 
 		// Выход 

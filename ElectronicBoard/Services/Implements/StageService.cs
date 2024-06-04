@@ -5,7 +5,10 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace ElectronicBoard.Services.Implements
 {
-    public class StageService : IStageService
+	/// <summary>
+	/// Класс для взаимодействия с сущностью "Этап"
+	/// </summary>
+	public class StageService : IStageService
     {
 		private IFileService fileService { get; set; }
         public StageService(IFileService _fileService) 
@@ -13,11 +16,12 @@ namespace ElectronicBoard.Services.Implements
             fileService = _fileService;
         }
 
-		public StageService()
-		{
-		}
+		public StageService() {}
 
-		// Получение всего списка этапов
+		/// <summary>
+		/// Метод для получения списка этапов
+		/// </summary>
+		/// <returns></returns>
 		public async Task<List<Stage>> GetFullList()
         {
             using var context = new ElectronicBoardDatabase();
@@ -25,12 +29,17 @@ namespace ElectronicBoard.Services.Implements
             .Select(CreateModel)
             .ToList();
         }
-        // Получение этапов по id проекта
-        public async Task<List<Stage>> GetFilteredList(int ProjectId)
+
+		/// <summary>
+		/// Метод для получения списка этапов по Id проекта
+		/// </summary>
+		/// <param name="ProjectId"></param>
+		/// <returns></returns>
+		public async Task<List<Stage>> GetFilteredList(int ProjectId)
         {
             if (ProjectId < 1)
             {
-                return null;
+                return new List<Stage>();
             }
             using var context = new ElectronicBoardDatabase();
             return (await context.Stages.ToListAsync())
@@ -38,8 +47,13 @@ namespace ElectronicBoard.Services.Implements
             .Select(CreateModel)
             .ToList();
         }
-        // Получение этапа по id или названию
-        public async Task<Stage> GetElement(Stage model)
+
+		/// <summary>
+		/// Метод для получения этапа по Id или названию
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task<Stage?> GetElement(Stage model)
         {
             if (model == null)
             {
@@ -50,8 +64,13 @@ namespace ElectronicBoard.Services.Implements
             .FirstOrDefaultAsync(rec => rec.StageName.Contains(model.StageName) || rec.Id == model.Id);
             return component != null ? CreateModel(component) : null;
         }
-        // Добавление этапа
-        public async Task Insert(Stage model)
+
+		/// <summary>
+		/// Метод для добавления этапа
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Insert(Stage model)
         {
             using var context = new ElectronicBoardDatabase();
 			var component = await context.Stages
@@ -63,7 +82,12 @@ namespace ElectronicBoard.Services.Implements
 			}
 			else throw new Exception("В проекте уже есть этап с таким названием");
 		}
-		// Редактирование данных об этапе
+
+		/// <summary>
+		/// Метод для редактирования этапа
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public async Task Update(Stage model)
         {
             using var context = new ElectronicBoardDatabase();
@@ -80,8 +104,13 @@ namespace ElectronicBoard.Services.Implements
 		    }
             else throw new Exception("В проекте уже есть этап с таким названием");
 	    }
-        // Удаление этапа
-        public async Task Delete(Stage model)
+
+		/// <summary>
+		/// Метод для удаления этапа
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Delete(Stage model)
         {
             using var context = new ElectronicBoardDatabase();
             using var transaction = await context.Database.BeginTransactionAsync();

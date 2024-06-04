@@ -26,7 +26,7 @@ namespace ElectronicBoard.Services.ServiceContracts
 		/// </summary>
 		/// <param name="model"></param>
 		/// <returns></returns>
-		public Task<Sticker> GetElement(Sticker model);
+		public Task<Sticker?> GetElement(Sticker model);
 
 		/// <summary>
 		/// Метод для добавления стикера

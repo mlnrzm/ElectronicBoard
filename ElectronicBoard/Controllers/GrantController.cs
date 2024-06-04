@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace ElectronicBoard.Controllers
 {
+	/// <summary>
+	/// Контроллер, обрабатывающий запросы касающиеся грантов
+	/// </summary>
 	[Authorize]
 	public class GrantController : Controller
 	{
@@ -41,83 +44,107 @@ namespace ElectronicBoard.Controllers
 			idn = new IdnMapping();
 		}
 
-		// Отображение страницы с информацией о гранте
+		/// <summary>
+		/// Метод для отображения страницы с информацией о гранте
+		/// </summary>
+		/// <param name="grant"></param>
+		/// <returns></returns>
 		public async Task<IActionResult> Index(Grant grant)
 		{
-			IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
-
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
-
-			Grant find_grant = await grantService.GetElement(new Grant { Id = grant.Id, BlockId = grant.BlockId });
-
-			if (find_grant != null)
+			try
 			{
-				// Конвертация изображения
-				if (find_grant.Picture.Length > 0)
+				IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant? activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
+
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
+
+				Grant? find_grant = await grantService.GetElement(new Grant { Id = grant.Id, BlockId = grant.BlockId });
+
+				if (find_grant != null)
 				{
-					ViewBag.Picture = "data:image/jpg;base64," + Convert.ToBase64String(find_grant.Picture);
+					// Конвертация изображения
+					if (find_grant.Picture.Length > 0)
+					{
+						ViewBag.Picture = "data:image/jpg;base64," + Convert.ToBase64String(find_grant.Picture);
+					}
+
+					// Стикеры
+					List<Sticker> stickers = await stickerService.GetFilteredList("grant", find_grant.Id);
+					ViewBag.Stickers = stickers;
+
+					// Файлы
+					List<File> files = await fileService.GetFilteredList("grant", find_grant.Id);
+					ViewBag.Files = files;
+
+					// Передача на страницу участников гранта
+					ViewBag.Participants = grantService.GetParticipants(find_grant.Id);
+
+					// Блок, на котором находится элемент
+					Block find_block = await blockService.GetElement(new Block { Id = find_grant.BlockId });
+					ViewBag.Block = find_block;
+
+					// Доска, на которой находится блок
+					Board? board = await boardService.GetElement(new Board { Id = find_block.BoardId });
+					List<Block> added_blocks = new List<Block>();
+					foreach (var b in await blockService.GetFilteredList(new Block { BoardId = board.Id })) { added_blocks.Add(b); }
+					ViewBag.Board = new Board
+					{
+						Id = board.Id,
+						BoardName = board.BoardName,
+						BoardThematics = board.BoardThematics,
+						Blocks = added_blocks
+					};
+
+					return View(find_grant);
 				}
-
-				// Стикеры
-				List<Sticker> stickers = await stickerService.GetFilteredList("grant", find_grant.Id);
-				ViewBag.Stickers = stickers;
-
-				// Файлы
-				List<File> files = await fileService.GetFilteredList("grant", find_grant.Id);
-				ViewBag.Files = files;
-
-				// Передача на страницу участников гранта
-				ViewBag.Participants = grantService.GetParticipants(find_grant.Id);
-
-				// Блок, на котором находится элемент
-				Block find_block = await blockService.GetElement(new Block { Id = find_grant.BlockId });
-				ViewBag.Block = find_block;
-
-				// Доска, на которой находится блок
-				Board board = await boardService.GetElement(new Board { Id = find_block.BoardId });
-				List<Block> added_blocks = new List<Block>();
-				foreach (var b in await blockService.GetFilteredList(new Block { BoardId = board.Id })) { added_blocks.Add(b); }
-				ViewBag.Board = new Board
+				else
 				{
-					Id = board.Id,
-					BoardName = board.BoardName,
-					BoardThematics = board.BoardThematics,
-					Blocks = added_blocks
-				};
-
-				return View(find_grant);
+					_notyf.Error("Грант не найден");
+					return Redirect("javascript: history.go(-1)");
+				}
 			}
-			else
+			catch (Exception ex)
 			{
-				_notyf.Error("Грант не найден");
+				_notyf.Error(ex.Message);
 				return Redirect("javascript: history.go(-1)");
 			}
 		}
 
-		// Добавление гранта
+		/// <summary>
+		/// Метод для отображения страницы добавления гранта
+		/// </summary>
+		/// <param name="blockId"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task<IActionResult> AddGrant(string blockId)
 		{
-			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
-
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
-
-			// Передача id блока, на котором будет находиться грант
-			Block block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
-			if (block != null)
+			try
 			{
-				ViewData["blockId"] = blockId;
-				return View();
+				IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant? activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
+
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
+
+				// Передача id блока, на котором будет находиться грант
+				Block? block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				if (block != null)
+				{
+					ViewData["blockId"] = blockId;
+					return View();
+				}
+				else
+				{
+					_notyf.Error("Ошибка");
+					return Redirect("javascript: history.go(-1)");
+				}
 			}
-			else
+			catch (Exception ex)
 			{
-				_notyf.Error("Ошибка");
+				_notyf.Error(ex.Message);
 				return Redirect("javascript: history.go(-1)");
 			}
 		}
@@ -129,7 +156,7 @@ namespace ElectronicBoard.Controllers
 				&& !string.IsNullOrEmpty(status) && !string.IsNullOrEmpty(text) && !string.IsNullOrEmpty(datesr)
 				&& !string.IsNullOrEmpty(datestart) && !string.IsNullOrEmpty(datefinish))
 			{
-				Block block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				Block? block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
 				if (block != null)
 				{
 					try
@@ -165,7 +192,7 @@ namespace ElectronicBoard.Controllers
 								BlockId = block.Id,
 								Picture = picture
 							});
-							Grant new_grant = await grantService.GetElement(new Grant
+							Grant? new_grant = await grantService.GetElement(new Grant
 							{
 								GrantName = name,
 								BlockId = block.Id
@@ -210,31 +237,43 @@ namespace ElectronicBoard.Controllers
 			}
 		}
 
-		// Редактирование гранта
+		/// <summary>
+		/// Метод для отображения страницы редактирования гранта
+		/// </summary>
+		/// <param name="grant"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task<IActionResult> UpdGrant(Grant grant)
 		{
-			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
-
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
-
-			Grant find_grant = await grantService.GetElement(new Grant
+			try
 			{
-				Id = grant.Id,
-				BlockId = grant.BlockId,
-				GrantName = idn.GetUnicode(grant.GrantName)
-			});
+				IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant? activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
 
-			if (find_grant != null)
-			{
-				return View(find_grant);
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
+
+				Grant? find_grant = await grantService.GetElement(new Grant
+				{
+					Id = grant.Id,
+					BlockId = grant.BlockId,
+					GrantName = idn.GetUnicode(grant.GrantName)
+				});
+
+				if (find_grant != null)
+				{
+					return View(find_grant);
+				}
+				else
+				{
+					_notyf.Error("Ошибка");
+					return Redirect("javascript: history.go(-1)");
+				}
 			}
-			else
+			catch (Exception ex)
 			{
-				_notyf.Error("Ошибка");
+				_notyf.Error(ex.Message);
 				return Redirect("javascript: history.go(-1)");
 			}
 		}
@@ -248,8 +287,8 @@ namespace ElectronicBoard.Controllers
 				&& !string.IsNullOrEmpty(status) && !string.IsNullOrEmpty(text) && !string.IsNullOrEmpty(datesr)
 				&& !string.IsNullOrEmpty(datestart) && !string.IsNullOrEmpty(datefinish))
 			{
-				Block block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
-				Grant grant = await grantService.GetElement(new Grant { Id = Convert.ToInt32(id) });
+				Block? block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				Grant? grant = await grantService.GetElement(new Grant { Id = Convert.ToInt32(id) });
 				if (block != null && grant != null)
 				{ 
 					try
@@ -281,7 +320,8 @@ namespace ElectronicBoard.Controllers
 						}
 						else if (!del)
 						{
-							picture = (await grantService.GetElement(new Grant { Id = ElementId })).Picture;
+							var grant_ = await grantService.GetElement(new Grant { Id = ElementId });
+							if (grant_ != null) picture = grant_.Picture;
 						}
 
 						DateTime DateStart = DateTime.ParseExact(datestart, "yyyy-M-dd", null);
@@ -352,43 +392,55 @@ namespace ElectronicBoard.Controllers
 			}
 		}
 
-		// Прикрепление участника к гранту
+		/// <summary>
+		/// Метод для отображения страницы добавления участника к гранту
+		/// </summary>
+		/// <param name="grantId"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task<IActionResult> AddPart(string grantId)
 		{
-			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
-
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
-
-			Grant find_grant = await grantService.GetElement(new Grant { Id = Convert.ToInt32(grantId) });
-			ViewBag.Grant = find_grant;
-
-			if (find_grant != null)
+			try
 			{
-				List<Participant> all_part = await participantService.GetFullList();
-				List<Participant> grant_part = await grantService.GetParticipants(find_grant.Id);
+				IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant? activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
 
-				List<Participant> part_for_adds = new List<Participant>();
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
 
-				foreach (Participant participant in all_part)
+				Grant? find_grant = await grantService.GetElement(new Grant { Id = Convert.ToInt32(grantId) });
+				ViewBag.Grant = find_grant;
+
+				if (find_grant != null)
 				{
-					bool add = true;
-					foreach (Participant gp in grant_part) 
+					List<Participant> all_part = await participantService.GetFullList();
+					List<Participant> grant_part = await grantService.GetParticipants(find_grant.Id);
+
+					List<Participant> part_for_adds = new List<Participant>();
+
+					foreach (Participant participant in all_part)
 					{
-						if (gp.Id == participant.Id) add = false;
+						bool add = true;
+						foreach (Participant gp in grant_part)
+						{
+							if (gp.Id == participant.Id) add = false;
+						}
+						if (add) { part_for_adds.Add(participant); }
 					}
-					if (add) { part_for_adds.Add(participant); }
+					ViewBag.Participants = part_for_adds;
+					return View();
 				}
-				ViewBag.Participants = part_for_adds;
-				return View();
+				else
+				{
+					_notyf.Error("Грант не найден");
+					return Redirect("javascript: history.go(-1)");
+				}
 			}
-			else
+			catch (Exception ex)
 			{
-				_notyf.Error("Грант не найден");
-				return Redirect("javascript: history.go(-1)");	
+				_notyf.Error(ex.Message);
+				return Redirect("javascript: history.go(-1)");
 			}
 		}
 		[HttpPost]
@@ -398,8 +450,8 @@ namespace ElectronicBoard.Controllers
 			int PartId = Convert.ToInt32(partId);
 			int GrantId = Convert.ToInt32(grantId);
 
-			Participant find_part = await participantService.GetElement(new Participant { Id = PartId });
-			Grant find_grant = await grantService.GetElement(new Grant { Id = GrantId });
+			Participant? find_part = await participantService.GetElement(new Participant { Id = PartId });
+			Grant? find_grant = await grantService.GetElement(new Grant { Id = GrantId });
 
 			if (find_part != null && find_grant != null)
 			{
@@ -421,7 +473,12 @@ namespace ElectronicBoard.Controllers
 			}
 		}
 
-		// Открепление участника
+		/// <summary>
+		/// Метод для открепления участника
+		/// </summary>
+		/// <param name="grantId"></param>
+		/// <param name="partId"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task DelPart(string partId, string grantId)
 		{
@@ -429,8 +486,8 @@ namespace ElectronicBoard.Controllers
 			int PartId = Convert.ToInt32(partId);
 			int GrantId = Convert.ToInt32(grantId);
 
-			Participant find_part = await participantService.GetElement(new Participant { Id = PartId });
-			Grant find_grant = await grantService.GetElement(new Grant { Id = GrantId });
+			Participant? find_part = await participantService.GetElement(new Participant { Id = PartId });
+			Grant? find_grant = await grantService.GetElement(new Grant { Id = GrantId });
 
 			if (find_part != null && find_grant != null)
 			{
@@ -452,18 +509,22 @@ namespace ElectronicBoard.Controllers
 			}
 		}
 
-		// Удаление гранта
+		/// <summary>
+		/// Метод для удаления гранта
+		/// </summary>
+		/// <param name="grantId"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task DeleteGrant(string grantId)
 		{
 			if (!string.IsNullOrEmpty(grantId))
 			{
-				Grant find_grant = await grantService.GetElement(new Grant { Id = Convert.ToInt32(grantId) });
+				Grant? find_grant = await grantService.GetElement(new Grant { Id = Convert.ToInt32(grantId) });
 				if (find_grant != null)
 				{
 					try
 					{
-						Grant grant = await grantService.GetElement(new Grant { Id = find_grant.Id });
+						Grant? grant = await grantService.GetElement(new Grant { Id = find_grant.Id });
 						await grantService.Delete(new Grant { Id = find_grant.Id });
 						Response.Redirect($"/block/index?Id=" + grant.BlockId.ToString());
 					}

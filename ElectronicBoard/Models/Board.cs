@@ -1,19 +1,31 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ElectronicBoard.Models
 {
-    /// <summary>
-    /// Доска
-    /// </summary>
-    public class Board
+	/// <summary>
+	/// Класс-модель сущности "Доска"
+	/// </summary>
+	public class Board
     {
-        public int Id { get; set; }
-        [Required]
+		/// <summary>
+		/// Идентификатор
+		/// </summary>
+		public int Id { get; set; }
+
+		/// <summary>
+		/// Наименование доски
+		/// </summary>
         public string BoardName { get; set; }
-        [Required]
-        public string BoardThematics { get; set; }
-        [ForeignKey("BoardId")]
+
+		/// <summary>
+		/// Тематика доски
+		/// </summary>
+		public string BoardThematics { get; set; }
+
+		/// <summary>
+		/// Блоки доски
+		/// </summary>
+		[ForeignKey("BoardId")]
         public virtual List<Block> Blocks { get; set; }
     }
 }

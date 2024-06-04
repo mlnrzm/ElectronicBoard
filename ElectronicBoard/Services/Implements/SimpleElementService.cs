@@ -5,7 +5,10 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace ElectronicBoard.Services.Implements
 {
-    public class SimpleElementService : ISimpleElementService
+	/// <summary>
+	/// Класс для взаимодействия с сущностью "Простой элемент"
+	/// </summary>
+	public class SimpleElementService : ISimpleElementService
     {
         private IFileService fileService { get; set; }
 		private IStickerService stickerService { get; set; }
@@ -16,11 +19,12 @@ namespace ElectronicBoard.Services.Implements
             stickerService = _stickerService;
         }
 
-		public SimpleElementService()
-		{
-		}
+		public SimpleElementService() {}
 
-		// Получение всего списка элементов
+		/// <summary>
+		/// Метод для получения списка элементов
+		/// </summary>
+		/// <returns></returns>
 		public async Task<List<SimpleElement>> GetFullList()
         {
             using var context = new ElectronicBoardDatabase();
@@ -29,12 +33,16 @@ namespace ElectronicBoard.Services.Implements
             .ToList();
         }
 
-        // Получение элементов по id блока
-        public async Task<List<SimpleElement>> GetFilteredList(int BlockId)
+		/// <summary>
+		/// Метод для получения списка элементов по Id блока
+		/// </summary>
+		/// <param name="BlockId"></param>
+		/// <returns></returns>
+		public async Task<List<SimpleElement>> GetFilteredList(int BlockId)
         {
             if (BlockId < 0)
             {
-                return null;
+                return new List<SimpleElement>();
             }
             using var context = new ElectronicBoardDatabase();
             return (await context.SimpleElements.ToListAsync())
@@ -43,8 +51,12 @@ namespace ElectronicBoard.Services.Implements
             .ToList();
         }
 
-        // Получение элемента по id или названию
-        public async Task<SimpleElement> GetElement(SimpleElement model)
+		/// <summary>
+		/// Метод для получения элемента по Id или названию
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task<SimpleElement?> GetElement(SimpleElement model)
         {
             if (model == null)
             {
@@ -56,8 +68,12 @@ namespace ElectronicBoard.Services.Implements
             return component != null ? CreateModel(component) : null;
         }
 
-        // Добавление элемента
-        public async Task Insert(SimpleElement model)
+		/// <summary>
+		/// Метод для добавления элемента
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Insert(SimpleElement model)
         {
             using var context = new ElectronicBoardDatabase();
 			var component = await context.SimpleElements
@@ -70,8 +86,12 @@ namespace ElectronicBoard.Services.Implements
 			else throw new Exception("В блоке уже есть элемент с таким названием");
 		}
 
-        // Редактирование элемента
-        public async Task Update(SimpleElement model)
+		/// <summary>
+		/// Метод для редактирования элемента
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Update(SimpleElement model)
         {
             using var context = new ElectronicBoardDatabase();
             var element = await context.SimpleElements.FirstOrDefaultAsync(rec => rec.Id == model.Id);
@@ -88,8 +108,12 @@ namespace ElectronicBoard.Services.Implements
             else throw new Exception("В блоке уже есть элемент с таким названием");
 		}
 
-        // Удаление элемента
-        public async Task Delete(SimpleElement model)
+		/// <summary>
+		/// Метод для удаления элемента
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Delete(SimpleElement model)
         {
             using var context = new ElectronicBoardDatabase();
 

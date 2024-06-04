@@ -25,7 +25,7 @@ namespace ElectronicBoard.Services.ServiceContracts
 		/// </summary>
 		/// <param name="model"></param>
 		/// <returns></returns>
-		public Task<Project> GetElement(Project model);
+		public Task<Project?> GetElement(Project model);
 
 		/// <summary>
 		/// Метод для добавления проекта

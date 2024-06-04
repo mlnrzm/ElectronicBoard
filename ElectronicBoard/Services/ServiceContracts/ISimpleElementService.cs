@@ -25,7 +25,7 @@ namespace ElectronicBoard.Services.ServiceContracts
 		/// </summary>
 		/// <param name="model"></param>
 		/// <returns></returns>
-		public Task<SimpleElement> GetElement(SimpleElement model);
+		public Task<SimpleElement?> GetElement(SimpleElement model);
 
 		/// <summary>
 		/// Метод для добавления элемента

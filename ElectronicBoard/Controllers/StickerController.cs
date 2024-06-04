@@ -1,11 +1,16 @@
 ﻿using AspNetCoreHero.ToastNotification.Abstractions;
 using ElectronicBoard.Models;
 using ElectronicBoard.Services.ServiceContracts;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ElectronicBoard.Controllers
 {
+	/// <summary>
+	/// Контроллер, обрабатывающий запросы касающиеся стикеров
+	/// </summary>
+	[Authorize]
 	public class StickerController : Controller
 	{
 		private readonly ILogger<StickerController> _logger;
@@ -41,36 +46,53 @@ namespace ElectronicBoard.Controllers
 			_userManager = userManager;
 		}
 
-		// Добавление стикера
+		/// <summary>
+		/// Метод для добавления стикера
+		/// </summary>
+		/// <param name="blockId"></param>
+		/// <param name="projectId"></param>
+		/// <param name="elementId"></param>
+		/// <param name="eventId"></param>
+		/// <param name="partId"></param>
+		/// <param name="grantId"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task<IActionResult> AddSticker(string blockId, 
 			string projectId, string elementId, string eventId, string partId, string grantId)
 		{
-			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
-
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
-
-			if (string.IsNullOrEmpty(projectId) && string.IsNullOrEmpty(elementId) && string.IsNullOrEmpty(eventId)
-				&& string.IsNullOrEmpty(partId) && string.IsNullOrEmpty(grantId)) 
+			try
 			{
-				_notyf.Error("Ошибка добавления стикера");
-				Response.Redirect($"/block/index?Id=" + blockId);
-			}
-			else 
-			{
-				ViewData["projectId"] = projectId;
-				ViewData["elementId"] = elementId;
-				ViewData["eventId"] = eventId;
-				ViewData["partId"] = partId;
-				ViewData["grantId"] = grantId;
-			}
+				IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant? activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
 
-			// Передача id блока, на котором будет находится элемент
-			ViewData["blockId"] = blockId;
-			return View();
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
+
+				if (string.IsNullOrEmpty(projectId) && string.IsNullOrEmpty(elementId) && string.IsNullOrEmpty(eventId)
+					&& string.IsNullOrEmpty(partId) && string.IsNullOrEmpty(grantId))
+				{
+					_notyf.Error("Ошибка добавления стикера");
+					Response.Redirect($"/block/index?Id=" + blockId);
+				}
+				else
+				{
+					ViewData["projectId"] = projectId;
+					ViewData["elementId"] = elementId;
+					ViewData["eventId"] = eventId;
+					ViewData["partId"] = partId;
+					ViewData["grantId"] = grantId;
+				}
+
+				// Передача id блока, на котором будет находится элемент
+				ViewData["blockId"] = blockId;
+				return View();
+			}
+			catch (Exception ex)
+			{
+				_notyf.Error(ex.Message);
+				return Redirect("javascript: history.go(-1)");
+			}
 		}
 		[HttpPost]
 		public async Task AddSticker(string blockId,
@@ -143,40 +165,58 @@ namespace ElectronicBoard.Controllers
 			}
 		}
 
-		// Редактирование стикера
+		/// <summary>
+		/// Метод для редактирования стикера
+		/// </summary>
+		/// <param name="id"></param>
+		/// <param name="blockId"></param>
+		/// <param name="projectId"></param>
+		/// <param name="elementId"></param>
+		/// <param name="eventId"></param>
+		/// <param name="partId"></param>
+		/// <param name="grantId"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task<IActionResult> UpdSticker(string id, string blockId,
 			string projectId, string elementId, string eventId, string partId, string grantId)
 		{
-			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
+			try
+			{
+				IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
 
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
 
-			int StickerId = Convert.ToInt32(id);
-			Sticker find_sticker = await stickerService.GetElement(new Sticker
-			{
-				Id = StickerId
-			});
-			if (string.IsNullOrEmpty(projectId) && string.IsNullOrEmpty(elementId) && string.IsNullOrEmpty(eventId)
-					&& string.IsNullOrEmpty(partId) && string.IsNullOrEmpty(grantId))
-			{
-				_notyf.Error("Ошибка редактирования стикера");
-				Response.Redirect($"/block/index?Id=" + blockId);
+				int StickerId = Convert.ToInt32(id);
+				Sticker? find_sticker = await stickerService.GetElement(new Sticker
+				{
+					Id = StickerId
+				});
+				if (string.IsNullOrEmpty(projectId) && string.IsNullOrEmpty(elementId) && string.IsNullOrEmpty(eventId)
+						&& string.IsNullOrEmpty(partId) && string.IsNullOrEmpty(grantId))
+				{
+					_notyf.Error("Ошибка редактирования стикера");
+					Response.Redirect($"/block/index?Id=" + blockId);
+				}
+				else
+				{
+					ViewData["projectId"] = projectId;
+					ViewData["elementId"] = elementId;
+					ViewData["eventId"] = eventId;
+					ViewData["partId"] = partId;
+					ViewData["grantId"] = grantId;
+				}
+				// Передача id блока, на котором находится элемент стикера
+				ViewData["blockId"] = blockId;
+				return View(find_sticker);
 			}
-			else
+			catch (Exception ex)
 			{
-				ViewData["projectId"] = projectId;
-				ViewData["elementId"] = elementId;
-				ViewData["eventId"] = eventId;
-				ViewData["partId"] = partId;
-				ViewData["grantId"] = grantId;
+				_notyf.Error(ex.Message);
+				return Redirect("javascript: history.go(-1)");
 			}
-			// Передача id блока, на котором находится элемент стикера
-			ViewData["blockId"] = blockId;
-			return View(find_sticker);
 		}
 		[HttpPost]
 		public async Task UpdSticker(string id, string blockId,
@@ -225,7 +265,8 @@ namespace ElectronicBoard.Controllers
 					}
 					else if (!del)
 					{
-						picture = (await stickerService.GetElement(new Sticker { Id = Id })).Picture;
+						var stick = await stickerService.GetElement(new Sticker { Id = Id });
+						if (stick != null) picture = stick.Picture;
 					}
 
 					// Редактирование и отображение элемента
@@ -265,7 +306,12 @@ namespace ElectronicBoard.Controllers
 			}
 		}
 
-		// Удаление стикера
+		/// <summary>
+		/// Метод для удаления стикера
+		/// </summary>
+		/// <param name="id"></param>
+		/// <param name="blockId"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task DeleteSticker(string id, string blockId)
 		{
@@ -278,7 +324,7 @@ namespace ElectronicBoard.Controllers
 
 				if (isNumeric_blockId && isNumeric_Id)
 				{
-					Sticker sticker = await stickerService.GetElement(new Sticker { Id = _id });
+					Sticker? sticker = await stickerService.GetElement(new Sticker { Id = _id });
 					int? ProjectId = sticker.ProjectId;
 					int? ElementId = sticker.SimpleElementId;
 					int? EventId = sticker.EventId;

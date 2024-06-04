@@ -8,6 +8,9 @@ using System.Globalization;
 
 namespace ElectronicBoard.Controllers
 {
+	/// <summary>
+	/// Контроллер, обрабатывающий запросы касающиеся авторов
+	/// </summary>
 	[Authorize]
 	public class AuthorController : Controller
 	{
@@ -40,102 +43,130 @@ namespace ElectronicBoard.Controllers
 			blockService = _blockService;
 		}
 
+		/// <summary>
+		/// Метод для отображения страницы с информацией об авторе
+		/// </summary>
+		/// <param name="blockId"></param>
+		/// <param name="articleId"></param>
+		/// <param name="authorId"></param>
+		/// <returns></returns>
 		public async Task<IActionResult> Index(string blockId, string articleId, string authorId)
 		{
 			int AuthorId = Convert.ToInt32(authorId);
 			int ArticleId = Convert.ToInt32(articleId);
 			int BlockId = Convert.ToInt32(blockId);
 
-			IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
+			try 
+			{ 
+				IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant? activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
 
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
 
-			Author find_author = await authorService.GetElement(new Author { Id = AuthorId });
-			Article? find_article = await articleService.GetElement(new Article { Id = ArticleId });
-			Block find_block = await blockService.GetElement(new Block { Id = BlockId });
+				Author? find_author = await authorService.GetElement(new Author { Id = AuthorId });
+				Article? find_article = await articleService.GetElement(new Article { Id = ArticleId });
+				Block? find_block = await blockService.GetElement(new Block { Id = BlockId });
 
-			if (find_author != null && find_article != null && find_block != null)
-			{
-				if (find_author.ParticipantId != null)
-					ViewBag.Participant = participantService.GetElement(
-					new Participant { Id = (int)find_author.ParticipantId });
-
-				// Статьи автора
-				List<Article> articles = await articleService.GetArticlesAuthor(find_author.Id);
-				ViewBag.Articles = articles;
-
-				// Статья, с которой был осуществлён переход к автору
-				ViewBag.Article = find_article;
-
-				// Блок, на котором находится элемент
-				ViewBag.Block = find_block;
-
-				// Доска, на которой находится блок
-				Board board = await boardService.GetElement(new Board { Id = find_block.BoardId });
-				List<Block> added_blocks = new List<Block>();
-				foreach (var b in await blockService.GetFilteredList(new Block { BoardId = board.Id })) { added_blocks.Add(b); }
-				ViewBag.Board = new Board
+				if (find_author != null && find_article != null && find_block != null)
 				{
-					Id = board.Id,
-					BoardName = board.BoardName,
-					BoardThematics = board.BoardThematics,
-					Blocks = added_blocks
-				};
+					if (find_author.ParticipantId != null)
+						ViewBag.Participant = participantService.GetElement(
+						new Participant { Id = (int)find_author.ParticipantId });
 
-				return View(find_author);
+					// Статьи автора
+					List<Article> articles = await articleService.GetArticlesAuthor(find_author.Id);
+					ViewBag.Articles = articles;
+
+					// Статья, с которой был осуществлён переход к автору
+					ViewBag.Article = find_article;
+
+					// Блок, на котором находится элемент
+					ViewBag.Block = find_block;
+
+					// Доска, на которой находится блок
+					Board? board = await boardService.GetElement(new Board { Id = find_block.BoardId });
+					List<Block> added_blocks = new List<Block>();
+					foreach (var b in await blockService.GetFilteredList(new Block { BoardId = board.Id })) { added_blocks.Add(b); }
+					ViewBag.Board = new Board
+					{
+						Id = board.Id,
+						BoardName = board.BoardName,
+						BoardThematics = board.BoardThematics,
+						Blocks = added_blocks
+					};
+
+					return View(find_author);
+				}
+				else 
+				{
+					_notyf.Error("Автор не найден");
+					return Redirect("javascript: history.go(-1)");
+				}
 			}
-			else 
+			catch (Exception ex)
 			{
-				_notyf.Error("Автор не найден");
+				_notyf.Error(ex.Message);
 				return Redirect("javascript: history.go(-1)");
 			}
 		}
 
-		// Добавление нового автора
+		/// <summary>
+		/// Метод для отображения страницы добавления нового автора
+		/// </summary>
+		/// <param name="blockId"></param>
+		/// <param name="articleId"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task<IActionResult> AddNewAuthor(string blockId, string articleId)
 		{
-			IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
-
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
-
-			Article? find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
-			Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
-
-			if (find_article != null && find_block != null) 
+			try
 			{
-				// Передача id блока, на котором будет находиться элемент
-				ViewData["blockId"] = blockId;
-				ViewData["articleId"] = articleId;
+				IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant? activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
 
-				// Передача авторов, которые ещё таковыми не являются 
-				List<Participant> partNoAuthor = new List<Participant>();
-				List<Participant> participants = await participantService.GetFullList();
-				List<Author> authors = await authorService.GetFullList();
-				foreach (var part in participants)
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
+
+				Article? find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
+				Block? find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+
+				if (find_article != null && find_block != null)
 				{
-					bool isAuthor = false;
-					foreach (var author in authors)
+					// Передача id блока, на котором будет находиться элемент
+					ViewData["blockId"] = blockId;
+					ViewData["articleId"] = articleId;
+
+					// Передача авторов, которые ещё таковыми не являются 
+					List<Participant> partNoAuthor = new List<Participant>();
+					List<Participant> participants = await participantService.GetFullList();
+					List<Author> authors = await authorService.GetFullList();
+					foreach (var part in participants)
 					{
-						if (author.ParticipantId == part.Id)
+						bool isAuthor = false;
+						foreach (var author in authors)
 						{
-							isAuthor = true;
+							if (author.ParticipantId == part.Id)
+							{
+								isAuthor = true;
+							}
 						}
+						if (!isAuthor) partNoAuthor.Add(part);
 					}
-					if (!isAuthor) partNoAuthor.Add(part);
+					ViewBag.Participants = partNoAuthor;
+					return View();
 				}
-				ViewBag.Participants = partNoAuthor;
-				return View();
+				else
+				{
+					_notyf.Error("Ошибка");
+					return Redirect("javascript: history.go(-1)");
+				}
 			}
-			else
+			catch (Exception ex)
 			{
-				_notyf.Error("Ошибка");
+				_notyf.Error(ex.Message);
 				return Redirect("javascript: history.go(-1)");
 			}
 		}
@@ -174,7 +205,7 @@ namespace ElectronicBoard.Controllers
 							AuthorOrganization = organization,
 							ParticipantId = participant
 						});
-						Author new_author = await authorService.GetElement(new Author
+						Author? new_author = await authorService.GetElement(new Author
 						{
 							ParticipantId = participant,
 							AuthorFIO = name,
@@ -206,46 +237,59 @@ namespace ElectronicBoard.Controllers
 			}
 		}
 
-		// Добавление существующего автора
+		/// <summary>
+		/// Метод для отображения страницы добавления существующего автора
+		/// </summary>
+		/// <param name="blockId"></param>
+		/// <param name="articleId"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task<IActionResult> AddAuthor(string blockId, string articleId)
 		{
-			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
-
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
-
-			Article? find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
-			Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
-
-			if (find_article != null && find_block != null)
+			try
 			{
-				// Передача id
-				ViewData["blockId"] = find_block.Id;
-				ViewData["articleId"] = find_article.Id;
+				IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant? activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
 
-				// Передача авторов, которые можно добавить к статье
-				List<Author> all_authors = await authorService.GetFullList();
-				List<Author> article_authors = await authorService.GetFilteredList(find_article.Id);
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
 
-				List<Author> authors_for_adds = new List<Author>();
-				foreach (var auth in all_authors)
+				Article? find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
+				Block? find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+
+				if (find_article != null && find_block != null)
 				{
-					bool add = true;
-					foreach (var article_auth in article_authors)
+					// Передача id
+					ViewData["blockId"] = find_block.Id;
+					ViewData["articleId"] = find_article.Id;
+
+					// Передача авторов, которые можно добавить к статье
+					List<Author> all_authors = await authorService.GetFullList();
+					List<Author> article_authors = await authorService.GetFilteredList(find_article.Id);
+
+					List<Author> authors_for_adds = new List<Author>();
+					foreach (var auth in all_authors)
 					{
-						if (auth.Id == article_auth.Id) add = false;
+						bool add = true;
+						foreach (var article_auth in article_authors)
+						{
+							if (auth.Id == article_auth.Id) add = false;
+						}
+						if (add) { authors_for_adds.Add(auth); }
 					}
-					if (add) { authors_for_adds.Add(auth); }
+					ViewBag.Authors = authors_for_adds;
+					return View();
 				}
-				ViewBag.Authors = authors_for_adds;
-				return View();
+				else
+				{
+					_notyf.Error("Ошибка");
+					return Redirect("javascript: history.go(-1)");
+				}
 			}
-			else
+			catch (Exception ex)
 			{
-				_notyf.Error("Ошибка");
+				_notyf.Error(ex.Message);
 				return Redirect("javascript: history.go(-1)");
 			}
 
@@ -254,9 +298,9 @@ namespace ElectronicBoard.Controllers
 		public async Task AddAuthor(string blockId, string articleId, string authorId)
 		{
 			// Привязка мероприятия к блоку и отображение блока с мероприятиями
-			Article find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
-			Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
-			Author find_author = await authorService.GetElement(new Author { Id = Convert.ToInt32(authorId) });
+			Article? find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
+			Block? find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+			Author? find_author = await authorService.GetElement(new Author { Id = Convert.ToInt32(authorId) });
 
 			if (find_article != null && find_author != null && find_block != null)
 			{
@@ -280,53 +324,67 @@ namespace ElectronicBoard.Controllers
 			}
 		}
 
-		// Редактирование автора
+		/// <summary>
+		/// Метод для отображения страницы редактирования автора
+		/// </summary>
+		/// <param name="blockId"></param>
+		/// <param name="articleId"></param>
+		/// <param name="authorId"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task<IActionResult> UpdAuthor(string blockId, string articleId, string authorId)
 		{
-			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
-
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
-
-			Article find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
-			Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
-			Author find_author = await authorService.GetElement(new Author { Id = Convert.ToInt32(authorId) });
-
-			if (find_article != null && find_block != null && find_author != null) 
+			try
 			{
-				// Передача id блока, на котором будет находиться элемент
-				ViewData["blockId"] = find_block.Id;
-				ViewData["articleId"] = find_article.Id;
+				IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant? activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
 
-				// Передача авторов, которые ещё таковыми не являются 
-				List<Participant> partNoAuthor = new List<Participant>();
-				List<Participant> participants = await participantService.GetFullList();
-				List<Author> authors = await authorService.GetFullList();
-				foreach (var part in participants)
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
+
+				Article? find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
+				Block? find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				Author? find_author = await authorService.GetElement(new Author { Id = Convert.ToInt32(authorId) });
+
+				if (find_article != null && find_block != null && find_author != null)
 				{
-					bool isAuthor = false;
-					foreach (var author in authors)
+					// Передача id блока, на котором будет находиться элемент
+					ViewData["blockId"] = find_block.Id;
+					ViewData["articleId"] = find_article.Id;
+
+					// Передача авторов, которые ещё таковыми не являются 
+					List<Participant> partNoAuthor = new List<Participant>();
+					List<Participant> participants = await participantService.GetFullList();
+					List<Author> authors = await authorService.GetFullList();
+					foreach (var part in participants)
 					{
-						if (author.ParticipantId == part.Id)
+						bool isAuthor = false;
+						foreach (var author in authors)
 						{
-							isAuthor = true;
+							if (author.ParticipantId == part.Id)
+							{
+								isAuthor = true;
+							}
 						}
+						if (!isAuthor) partNoAuthor.Add(part);
 					}
-					if (!isAuthor) partNoAuthor.Add(part);
+					if (find_author.ParticipantId != null)
+					{
+						ViewBag.ActiveParticipant = await participantService.GetElement(new Participant { Id = (int)find_author.ParticipantId });
+					}
+					ViewBag.Participants = partNoAuthor;
+					return View(find_author);
 				}
-				if (find_author.ParticipantId != null)
+				else
 				{
-					ViewBag.ActiveParticipant = await participantService.GetElement(new Participant { Id = (int)find_author.ParticipantId });
+					_notyf.Error("Ошибка");
+					return Redirect("javascript: history.go(-1)");
 				}
-				ViewBag.Participants = partNoAuthor;
-				return View(find_author);
 			}
-			else
+			catch (Exception ex)
 			{
-				_notyf.Error("Ошибка");
+				_notyf.Error(ex.Message);
 				return Redirect("javascript: history.go(-1)");
 			}
 		}
@@ -368,7 +426,7 @@ namespace ElectronicBoard.Controllers
 							AuthorOrganization = organization,
 							ParticipantId = participant
 						});
-						Author new_author = await authorService.GetElement(new Author
+						Author? new_author = await authorService.GetElement(new Author
 						{
 							Id = AuthorId,
 							ParticipantId = participant,
@@ -400,7 +458,13 @@ namespace ElectronicBoard.Controllers
 			}
 		}
 
-		// Удаление автора из статьи
+		/// <summary>
+		/// Метод удаления автора из статьи
+		/// </summary>
+		/// <param name="blockId"></param>
+		/// <param name="articleId"></param>
+		/// <param name="authorId"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task DeleteAuthorArticle(string blockId, string articleId, string authorId)
 		{
@@ -416,9 +480,9 @@ namespace ElectronicBoard.Controllers
 				{
 					try
 					{
-						Author auth = await authorService.GetElement(new Author { Id = author_id });
-						Article art = await articleService.GetElement(new Article { Id = article_id });
-						Block bl = await blockService.GetElement(new Block { Id = block_id });
+						Author? auth = await authorService.GetElement(new Author { Id = author_id });
+						Article? art = await articleService.GetElement(new Article { Id = article_id });
+						Block? bl = await blockService.GetElement(new Block { Id = block_id });
 						if (auth != null && bl != null && art != null)
 						{
 							await articleService.GetAuthor(auth, art.Id);
@@ -448,9 +512,19 @@ namespace ElectronicBoard.Controllers
 						$"&articleId={idn.GetAscii(articleId)}");
 				}
 			}
+			else
+			{
+				_notyf.Error("Ошибка");
+			}
 		}
 
-		// Удаление автора
+		/// <summary>
+		/// Метод удаления автора
+		/// </summary>
+		/// <param name="blockId"></param>
+		/// <param name="articleId"></param>
+		/// <param name="authorId"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task DeleteAuthor(string blockId, string articleId, string authorId)
 		{
@@ -467,9 +541,9 @@ namespace ElectronicBoard.Controllers
 				{
 					try
 					{
-						Author auth = await authorService.GetElement(new Author { Id = author_id });
-						Article art = await articleService.GetElement(new Article { Id = article_id });
-						Block bl = await blockService.GetElement(new Block { Id = block_id });
+						Author? auth = await authorService.GetElement(new Author { Id = author_id });
+						Article? art = await articleService.GetElement(new Article { Id = article_id });
+						Block? bl = await blockService.GetElement(new Block { Id = block_id });
 						if (auth != null && bl != null && art != null)
 						{
 							await authorService.Delete(auth);
@@ -500,6 +574,10 @@ namespace ElectronicBoard.Controllers
 						$"&articleId={idn.GetAscii(articleId)}" +
 						$"&authorId={idn.GetAscii(authorId)}");
 				}
+			}
+			else
+			{
+				_notyf.Error("Ошибка");
 			}
 		}
 	}

@@ -5,9 +5,14 @@ using ElectronicBoard.Services.ServiceContracts;
 using Microsoft.AspNetCore.Mvc;
 using System.Globalization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ElectronicBoard.Controllers
 {
+	/// <summary>
+	/// Контроллер, обрабатывающий запросы касающиеся проектов
+	/// </summary>
+	[Authorize]
 	public class ProjectController : Controller
 	{
 		private readonly ILogger<ProjectController> _logger;
@@ -41,84 +46,109 @@ namespace ElectronicBoard.Controllers
 			participantService = _participantService;
 			idn = new IdnMapping();
 		}
-		// Отображение страницы с информацией о проекте
+
+		/// <summary>
+		/// Метод для отображения страницы с информацией о проекте
+		/// </summary>
+		/// <param name="project"></param>
+		/// <returns></returns>
 		public async Task<IActionResult> Index(Project project)
 		{
-			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
-
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
-
-			Project find_project = await projectService.GetElement(new Project { Id = project.Id, BlockId = project.BlockId });
-			if (find_project != null)
+			try
 			{
-				// Конвертация изображения
-				if (find_project.Picture.Length > 0)
+				IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant? activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
+
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
+
+				Project? find_project = await projectService.GetElement(new Project { Id = project.Id, BlockId = project.BlockId });
+				if (find_project != null)
 				{
-					ViewBag.Picture = "data:image/jpg;base64," + Convert.ToBase64String(find_project.Picture);
+					// Конвертация изображения
+					if (find_project.Picture.Length > 0)
+					{
+						ViewBag.Picture = "data:image/jpg;base64," + Convert.ToBase64String(find_project.Picture);
+					}
+
+					// Стикеры
+					List<Sticker> stickers = await stickerService.GetFilteredList("project", find_project.Id);
+					ViewBag.Stickers = stickers;
+
+					// Файлы
+					List<File> files = await fileService.GetFilteredList("project", find_project.Id);
+					ViewBag.Files = files;
+
+					// Этапы проекта
+					List<Stage> added_stages = new List<Stage>();
+					foreach (var b in await stageService.GetFilteredList(find_project.Id)) { added_stages.Add(b); }
+					ViewBag.Stages = added_stages;
+
+					// Блок, на котором находится элемент
+					Block? find_block = await blockService.GetElement(new Block { Id = find_project.BlockId });
+					ViewBag.Block = find_block;
+
+					// Доска, на которой находится блок
+					Board? board = await boardService.GetElement(new Board { Id = find_block.BoardId });
+					List<Block> added_blocks = new List<Block>();
+					foreach (var b in await blockService.GetFilteredList(new Block { BoardId = board.Id })) { added_blocks.Add(b); }
+					ViewBag.Board = new Board
+					{
+						Id = board.Id,
+						BoardName = board.BoardName,
+						BoardThematics = board.BoardThematics,
+						Blocks = added_blocks
+					};
+					return View(find_project);
 				}
-
-				// Стикеры
-				List<Sticker> stickers = await stickerService.GetFilteredList("project", find_project.Id);
-				ViewBag.Stickers = stickers;
-
-				// Файлы
-				List<File> files = await fileService.GetFilteredList("project", find_project.Id);
-				ViewBag.Files = files;
-
-				// Этапы проекта
-				List<Stage> added_stages = new List<Stage>();
-				foreach (var b in await stageService.GetFilteredList(find_project.Id)) { added_stages.Add(b); }
-				ViewBag.Stages = added_stages;
-
-				// Блок, на котором находится элемент
-				Block find_block = await blockService.GetElement(new Block { Id = find_project.BlockId });
-				ViewBag.Block = find_block;
-
-				// Доска, на которой находится блок
-				Board board = await boardService.GetElement(new Board { Id = find_block.BoardId });
-				List<Block> added_blocks = new List<Block>();
-				foreach (var b in await blockService.GetFilteredList(new Block { BoardId = board.Id })) { added_blocks.Add(b); }
-				ViewBag.Board = new Board
+				else
 				{
-					Id = board.Id,
-					BoardName = board.BoardName,
-					BoardThematics = board.BoardThematics,
-					Blocks = added_blocks
-				};
-				return View(find_project);
+					_notyf.Error("Ошибка");
+					return Redirect("javascript: history.go(-1)");
+				}
 			}
-			else
+			catch (Exception ex)
 			{
-				_notyf.Error("Ошибка");
+				_notyf.Error(ex.Message);
 				return Redirect("javascript: history.go(-1)");
 			}
 		}
 
-		// Добавление проекта
+		/// <summary>
+		/// Метод для отображения страницы добавления проекта
+		/// </summary>
+		/// <param name="project"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task<IActionResult> AddProject(string blockId)
 		{
-			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
-
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
-
-			Block block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
-			if (block != null)
+			try
 			{
+				IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant? activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
 
-				// Передача id блока, на котором будет находиться проект
-				ViewData["blockId"] = blockId;
-				return View();
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
+
+				Block? block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				if (block != null)
+				{
+
+					// Передача id блока, на котором будет находиться проект
+					ViewData["blockId"] = blockId;
+					return View();
+				}
+				else
+				{
+					_notyf.Error("Ошибка");
+					return Redirect("javascript: history.go(-1)");
+				}
 			}
-			else
+			catch (Exception ex)
 			{
-				_notyf.Error("Ошибка");
+				_notyf.Error(ex.Message);
 				return Redirect("javascript: history.go(-1)");
 			}
 		}
@@ -127,7 +157,7 @@ namespace ElectronicBoard.Controllers
 		{
 			if (!string.IsNullOrEmpty(blockId) && !string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(text) && !string.IsNullOrEmpty(desc))
 			{
-				Block block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				Block? block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
 				if (block != null)
 				{
 					try
@@ -148,7 +178,7 @@ namespace ElectronicBoard.Controllers
 
 						// Добавление и отображение элемента блока
 						await projectService.Insert(new Project { ProjectName = name, ProjectText = text, ProjectDescription = desc, BlockId = BlockId, Picture = picture });
-						Project new_project = await projectService.GetElement(new Project
+						Project? new_project = await projectService.GetElement(new Project
 						{
 							ProjectName = name,
 							ProjectText = text,
@@ -182,32 +212,44 @@ namespace ElectronicBoard.Controllers
 			}
 		}
 
-		// Редактирование проекта
+		/// <summary>
+		/// Метод для отображения страницы редактирования проекта
+		/// </summary>
+		/// <param name="project"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task<IActionResult> UpdProject(Project project)
 		{
-			IdentityUser<int> UserId = await _userManager.GetUserAsync(HttpContext.User);
-			Participant activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
-			ViewBag.ActivePart = activeUser;
-
-			List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
-			ViewBag.ActiveBoards = activeBoards;
-
-			Project find_project = await projectService.GetElement(new Project
+			try
 			{
-				Id = project.Id,
-				ProjectName = idn.GetUnicode(project.ProjectName),
-				ProjectText = idn.GetUnicode(project.ProjectText),
-				ProjectDescription = idn.GetUnicode(project.ProjectDescription),
-				BlockId = project.BlockId
-			});
-			if (find_project != null)
-			{
-				return View(find_project);
+				IdentityUser<int>? UserId = await _userManager.GetUserAsync(HttpContext.User);
+				Participant? activeUser = await participantService.GetElement(new Participant { IdentityId = UserId.Id });
+				ViewBag.ActivePart = activeUser;
+
+				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
+				ViewBag.ActiveBoards = activeBoards;
+
+				Project? find_project = await projectService.GetElement(new Project
+				{
+					Id = project.Id,
+					ProjectName = idn.GetUnicode(project.ProjectName),
+					ProjectText = idn.GetUnicode(project.ProjectText),
+					ProjectDescription = idn.GetUnicode(project.ProjectDescription),
+					BlockId = project.BlockId
+				});
+				if (find_project != null)
+				{
+					return View(find_project);
+				}
+				else
+				{
+					_notyf.Error("Ошибка");
+					return Redirect("javascript: history.go(-1)");
+				}
 			}
-			else
+			catch (Exception ex)
 			{
-				_notyf.Error("Ошибка");
+				_notyf.Error(ex.Message);
 				return Redirect("javascript: history.go(-1)");
 			}
 		}
@@ -218,8 +260,8 @@ namespace ElectronicBoard.Controllers
 			if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(blockId) &&
 				!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(text))
 			{
-				Project pr = await projectService.GetElement(new Project { Id = Convert.ToInt32(id) });
-				Block bl = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				Project? pr = await projectService.GetElement(new Project { Id = Convert.ToInt32(id) });
+				Block? bl = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
 				if (pr != null && bl != null)
 				{
 					try
@@ -251,7 +293,8 @@ namespace ElectronicBoard.Controllers
 						}
 						else if (!del)
 						{
-							picture = (await projectService.GetElement(new Project { Id = ElementId })).Picture;
+							var proj = await projectService.GetElement(new Project { Id = ElementId });
+							if (proj != null) picture = proj.Picture;
 						}
 
 						// Редактирование и отображение проекта
@@ -289,14 +332,19 @@ namespace ElectronicBoard.Controllers
 			}
 		}
 
-		// Удаление проекта
+		/// <summary>
+		/// Метод для удаления проекта
+		/// </summary>
+		/// <param name="blockId"></param>
+		/// <param name="projectId"></param>
+		/// <returns></returns>
 		[HttpGet]
 		public async Task DeleteProject(string blockId, string projectId)
 		{
 			if (!string.IsNullOrEmpty(projectId) && !string.IsNullOrEmpty(blockId))
 			{
-				Project pr = await projectService.GetElement(new Project { Id = Convert.ToInt32(projectId) });
-				Block bl = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				Project? pr = await projectService.GetElement(new Project { Id = Convert.ToInt32(projectId) });
+				Block? bl = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
 				if (pr != null && bl != null)
 				{
 					try
@@ -322,6 +370,5 @@ namespace ElectronicBoard.Controllers
 				Response.Redirect("javascript: history.go(-1)");
 			}
 		}
-
 	}
 }

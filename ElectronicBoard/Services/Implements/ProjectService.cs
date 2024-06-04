@@ -5,7 +5,10 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace ElectronicBoard.Services.Implements
 {
-    public class ProjectService : IProjectService
+	/// <summary>
+	/// Класс для взаимодействия с сущностью "Проект"
+	/// </summary>
+	public class ProjectService : IProjectService
     {
         private IStageService stageService { get; set; }
 		private IFileService fileService { get; set; }
@@ -18,11 +21,12 @@ namespace ElectronicBoard.Services.Implements
             stickerService = _stickerService;
 		}
 
-		public ProjectService()
-		{
-		}
+		public ProjectService() {}
 
-		// Получение всего списка проектов
+		/// <summary>
+		/// Метод для получения списка проектов
+		/// </summary>
+		/// <returns></returns>
 		public async Task<List<Project>> GetFullList()
         {
             using var context = new ElectronicBoardDatabase();
@@ -30,12 +34,17 @@ namespace ElectronicBoard.Services.Implements
             .Select(CreateModel)
             .ToList();
         }
-        // Получение проектов по id блока
-        public async Task<List<Project>> GetFilteredList(int BlockId)
+
+		/// <summary>
+		/// Метод для получения списка проектов по Id блока
+		/// </summary>
+		/// <param name="BlockId"></param>
+		/// <returns></returns>
+		public async Task<List<Project>> GetFilteredList(int BlockId)
         {
             if (BlockId < 0)
             {
-                return null;
+                return new List<Project>();
             }
             using var context = new ElectronicBoardDatabase();
             return (await context.Projects.ToListAsync())
@@ -43,8 +52,13 @@ namespace ElectronicBoard.Services.Implements
             .Select(CreateModel)
             .ToList();
         }
-        // Получение проекта по id или названию
-        public async Task<Project> GetElement(Project model)
+
+		/// <summary>
+		/// Метод для получения проекта по Id или названию
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task<Project?> GetElement(Project model)
         {
             if (model == null)
             {
@@ -55,8 +69,13 @@ namespace ElectronicBoard.Services.Implements
             .FirstOrDefaultAsync(rec => rec.ProjectName.Contains(model.ProjectName) || rec.Id == model.Id);
             return component != null ? CreateModel(component) : null;
         }
-        // Добавление проекта
-        public async Task Insert(Project model)
+
+		/// <summary>
+		/// Метод для добавления проекта
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Insert(Project model)
         {
             using var context = new ElectronicBoardDatabase();
 			var component = await context.Projects
@@ -68,7 +87,12 @@ namespace ElectronicBoard.Services.Implements
 			}
 			else throw new Exception("Проект с таким названием уже существует");
 		}
-		// Редактирование данных о проекте
+
+		/// <summary>
+		/// Метод для редактирования проекта
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
 		public async Task Update(Project model)
         {
             using var context = new ElectronicBoardDatabase();
@@ -85,8 +109,13 @@ namespace ElectronicBoard.Services.Implements
 			}
 			else throw new Exception("Проект с таким названием уже существует");
         }
-        // Удаление проекта
-        public async Task Delete(Project model)
+
+		/// <summary>
+		/// Метод для удаления проекта
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public async Task Delete(Project model)
         {
             using var context = new ElectronicBoardDatabase();
             using var transaction = await context.Database.BeginTransactionAsync();
@@ -129,7 +158,7 @@ namespace ElectronicBoard.Services.Implements
                     var stages = (await context.Stages.ToListAsync()).Where(rec => rec.ProjectId == model.Id).ToList();
                     foreach (var stage in stages)
                     {
-                        stageService.Delete(stage);
+                        await stageService.Delete(stage);
                     }
 
                     // Удаление участника
@@ -148,8 +177,14 @@ namespace ElectronicBoard.Services.Implements
                 throw;
             }
         }
-        // Привязка и отвязка ответственных за проект
-        public async Task GetResponsable(Participant model, int project_id)
+
+		/// <summary>
+		/// Метод для прикрепления/открепления ответственного
+		/// </summary>
+		/// <param name="model"></param>
+		/// <param name="project_id"></param>
+		/// <returns></returns>
+		public async Task GetResponsable(Participant model, int project_id)
         {
             using var context = new ElectronicBoardDatabase();
             var this_part = await context.Participants.FirstOrDefaultAsync(rec => rec.Id == model.Id);

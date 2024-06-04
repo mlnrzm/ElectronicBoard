@@ -12,7 +12,7 @@ namespace ElectronicBoard.Services.ServiceContracts
 		/// </summary>
 		/// <param name="model"></param>
 		/// <returns></returns>
-		public Task<UserLDAP> GetElement(UserLDAP model);
+		public Task<UserLDAP?> GetElement(UserLDAP model);
 
 		/// <summary>
 		/// Метод для добавления аккаунта
