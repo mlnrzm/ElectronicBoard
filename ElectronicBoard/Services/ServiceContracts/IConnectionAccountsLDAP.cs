@@ -11,5 +11,13 @@
 		/// <param name="userLDAPService"></param>
 		/// <returns></returns>
 		public Task ConnectionLDAP(IUserLDAPService userLDAPService);
+
+		/// <summary>
+		/// Метод для авторизации в LDAP
+		/// </summary>
+		/// <param name="user_login"></param>
+		/// <param name="user_password"></param>
+		/// <returns></returns>
+		public bool CanAuthorize(string user_login, string user_password);
 	}
 }

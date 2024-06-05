@@ -16,13 +16,12 @@ namespace ElectronicBoard.Models
 		}
 		protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 		{
+			var MyConfig = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+			string? DBConn = MyConfig.GetValue<string>("DBConnection:StringConnection");
+
 			if (optionsBuilder.IsConfigured == false)
 			{
-				optionsBuilder.UseSqlServer(@"Data Source=DESKTOP-Q2JQENQ\SQLEXPRESS;
-                Initial Catalog=ElectronicBoardDatabase;
-                Integrated Security=True;
-                MultipleActiveResultSets=True;
-				TrustServerCertificate=True;");
+				optionsBuilder.UseSqlServer(DBConn);
 			}
 			base.OnConfiguring(optionsBuilder);
 		}

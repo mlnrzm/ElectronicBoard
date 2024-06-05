@@ -231,11 +231,7 @@ namespace ElectronicBoard.Controllers
 
 				Project? find_project = await projectService.GetElement(new Project
 				{
-					Id = project.Id,
-					ProjectName = idn.GetUnicode(project.ProjectName),
-					ProjectText = idn.GetUnicode(project.ProjectText),
-					ProjectDescription = idn.GetUnicode(project.ProjectDescription),
-					BlockId = project.BlockId
+					Id = project.Id
 				});
 				if (find_project != null)
 				{

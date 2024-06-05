@@ -29,6 +29,13 @@ namespace ElectronicBoard.Services.ServiceContracts
 		public Task Delete(UserLDAP model);
 
 		/// <summary>
+		/// Проверка правильности пароля
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public bool CheckPassword(UserLDAP model);
+
+		/// <summary>
 		/// Метод для очистки таблицы с пользователями
 		/// </summary>
 		public void RemoveTable();

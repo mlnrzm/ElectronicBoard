@@ -229,7 +229,7 @@ namespace ElectronicBoard.Services.Implements
                 }
                 else
                 {
-					(await context.ArticleAggregators.ToListAsync()).Remove(art_aggreg);
+					context.ArticleAggregators.Remove(art_aggreg);
 					await context.SaveChangesAsync();
                 }
             }
@@ -285,7 +285,7 @@ namespace ElectronicBoard.Services.Implements
 				}
                 else
                 {
-					(await context.ArticleAuthors.ToListAsync()).Remove(art_auth);
+					context.ArticleAuthors.Remove(art_auth);
 					await context.SaveChangesAsync();
 				}
             }

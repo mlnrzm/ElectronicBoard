@@ -57,6 +57,13 @@ namespace ElectronicBoard.Services.ServiceContracts
 		public Task Delete(Participant model);
 
 		/// <summary>
+		/// Метод для регистрации участника в приложении
+		/// </summary>
+		/// <param name="part"></param>
+		/// <returns></returns>
+		public Task Register(Participant part);
+
+		/// <summary>
 		/// Метод для обновления рейтинга
 		/// </summary>
 		/// <param name="partId"></param>

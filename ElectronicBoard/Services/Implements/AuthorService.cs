@@ -56,9 +56,21 @@ namespace ElectronicBoard.Services.Implements
                 return null;
             }
             using var context = new ElectronicBoardDatabase();
-            var component = await context.Authors
-            .FirstOrDefaultAsync(rec => rec.ParticipantId == model.ParticipantId || rec.AuthorFIO.Contains(model.AuthorFIO) || rec.Id == model.Id);
-            return component != null ? CreateModel(component) : null;
+            Author? component = null;
+            if (model.Id > 0)
+            {
+                component = await context.Authors
+                    .FirstOrDefaultAsync(rec => rec.Id == model.Id);
+            }
+            else if (!string.IsNullOrEmpty(model.AuthorFIO)) 
+            {
+				component = await context.Authors.FirstOrDefaultAsync(rec => rec.AuthorFIO.Contains(model.AuthorFIO) && rec.ParticipantId == model.ParticipantId);
+			}
+            else
+            {
+                component = await context.Authors.FirstOrDefaultAsync(rec => rec.ParticipantId == model.ParticipantId);
+            }
+			return component != null ? CreateModel(component) : null;
         }
 
 		/// <summary>

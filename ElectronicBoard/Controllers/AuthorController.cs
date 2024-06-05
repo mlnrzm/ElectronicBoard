@@ -179,7 +179,7 @@ namespace ElectronicBoard.Controllers
 				!string.IsNullOrEmpty(email) && !string.IsNullOrEmpty(partId))
 			{
 				Article? find_article = await articleService.GetElement(new Article { Id = Convert.ToInt32(articleId) });
-				Block find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
+				Block? find_block = await blockService.GetElement(new Block { Id = Convert.ToInt32(blockId) });
 
 				if (find_article != null && find_block != null)
 				{

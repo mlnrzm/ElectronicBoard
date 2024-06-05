@@ -104,7 +104,7 @@ namespace ElectronicBoard
 			app.UseRouting();
 
 			app.UseCors(x => x
-				.WithOrigins("http://localhost:44336/") 
+				.WithOrigins(Configuration.GetSection("Address").Value) 
 				.AllowCredentials()
 				.AllowAnyMethod()
 				.AllowAnyHeader());

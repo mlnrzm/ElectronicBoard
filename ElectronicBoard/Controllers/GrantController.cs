@@ -79,10 +79,11 @@ namespace ElectronicBoard.Controllers
 					ViewBag.Files = files;
 
 					// Передача на страницу участников гранта
-					ViewBag.Participants = grantService.GetParticipants(find_grant.Id);
+					List<Participant> parts = await grantService.GetParticipants(find_grant.Id);
+					ViewBag.Participants = parts;
 
 					// Блок, на котором находится элемент
-					Block find_block = await blockService.GetElement(new Block { Id = find_grant.BlockId });
+					Block? find_block = await blockService.GetElement(new Block { Id = find_grant.BlockId });
 					ViewBag.Block = find_block;
 
 					// Доска, на которой находится блок
@@ -257,8 +258,7 @@ namespace ElectronicBoard.Controllers
 				Grant? find_grant = await grantService.GetElement(new Grant
 				{
 					Id = grant.Id,
-					BlockId = grant.BlockId,
-					GrantName = idn.GetUnicode(grant.GrantName)
+					BlockId = grant.BlockId
 				});
 
 				if (find_grant != null)

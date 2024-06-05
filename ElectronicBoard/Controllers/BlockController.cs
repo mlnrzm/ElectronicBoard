@@ -294,7 +294,7 @@ namespace ElectronicBoard.Controllers
 				List<Board> activeBoards = await boardService.GetParticipantBoards(activeUser.Id);
 				ViewBag.ActiveBoards = activeBoards;
 
-				Block find_block = await blockService.GetElement(new Block { Id = block.Id, BoardId = block.BoardId, BlockName = idn.GetUnicode(block.BlockName), VisibilityOpening = block.VisibilityOpening });
+				Block? find_block = await blockService.GetElement(new Block { Id = block.Id, BoardId = block.BoardId, BlockName = idn.GetUnicode(block.BlockName), VisibilityOpening = block.VisibilityOpening });
 
 				if (find_block != null)
 				{
@@ -340,7 +340,7 @@ namespace ElectronicBoard.Controllers
 						await blockService.Update(new Block { Id = block.Id, BoardId = board.Id, BlockName = name, VisibilityOpening = visible });
 						Response.Redirect($"/block/index?" +
 							$"Id={idn.GetAscii(block.Id.ToString())}" +
-							$"BoardId={idn.GetAscii(board.Id.ToString())}" +
+							$"&BoardId={idn.GetAscii(board.Id.ToString())}" +
 							$"&BlockName={idn.GetAscii(name)}" +
 							$"&VisibilityOpening={idn.GetAscii(visible.ToString())}");
 					}
@@ -355,7 +355,7 @@ namespace ElectronicBoard.Controllers
 					_notyf.Error(ex.Message);
 					Response.Redirect($"/block/updblock?" +
 						$"Id={idn.GetAscii(id)}" +
-						$"BoardId={idn.GetAscii(boardId)}" +
+						$"&BoardId={idn.GetAscii(boardId)}" +
 						$"&BlockName={idn.GetAscii(name)}" +
 						$"&VisibilityOpening={idn.GetAscii(copy)}");
 				}
@@ -365,7 +365,7 @@ namespace ElectronicBoard.Controllers
 				_notyf.Error("Заполните все поля");
 				Response.Redirect($"/block/updblock?" +
 					$"Id={idn.GetAscii(id)}" +
-					$"BoardId={idn.GetAscii(boardId)}" +
+					$"&BoardId={idn.GetAscii(boardId)}" +
 					$"&BlockName={idn.GetAscii(name)}" +
 					$"&VisibilityOpening={idn.GetAscii(copy)}");
 			}

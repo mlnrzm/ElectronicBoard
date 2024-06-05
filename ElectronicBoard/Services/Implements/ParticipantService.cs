@@ -1,7 +1,9 @@
 ﻿using ElectronicBoard.Models;
 using ElectronicBoard.Services.ServiceContracts;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
+using System.Security.Claims;
 
 namespace ElectronicBoard.Services.Implements
 {
@@ -10,16 +12,21 @@ namespace ElectronicBoard.Services.Implements
 	/// </summary>
 	public class ParticipantService : IParticipantService
     {
+		private UserManager<IdentityUser<int>> _userManager;
+		private SignInManager<IdentityUser<int>> _signInManager;
 		private IAuthorService authorService { get; set; }
 		private IFileService fileService { get; set; }
 		private IBlockService blockService { get; set; }
 		private IBoardService boardService { get; set; }
 		private IStickerService stickerService { get; set; }
 
-		public ParticipantService(IAuthorService _authorService, 
+		public ParticipantService(UserManager<IdentityUser<int>> user, SignInManager<IdentityUser<int>> signIn,
+			IAuthorService _authorService, 
             IFileService _fileService, IStickerService _stickerService, 
             IBlockService _blockService, IBoardService _boardService)
         {
+			_userManager = user;
+			_signInManager = signIn;
             authorService = _authorService;
             fileService = _fileService;
             stickerService = _stickerService;
@@ -95,8 +102,17 @@ namespace ElectronicBoard.Services.Implements
                 return null;
             }
             using var context = new ElectronicBoardDatabase();
-            var component = await context.Participants
-            .FirstOrDefaultAsync(rec => rec.IdentityId == model.IdentityId || rec.ParticipantFIO.Contains(model.ParticipantFIO) || rec.Id == model.Id);
+			Participant? component = null;
+			if (model.Id > 0)
+			{
+				component = await context.Participants
+					.FirstOrDefaultAsync(rec => rec.Id == model.Id);
+			}
+			else 
+			{
+				component = await context.Participants
+					.FirstOrDefaultAsync(rec => rec.IdentityId == model.IdentityId || rec.ParticipantFIO.Contains(model.ParticipantFIO));
+			}
             return component != null ? CreateModel(component) : null;
         }
 
@@ -210,6 +226,49 @@ namespace ElectronicBoard.Services.Implements
                 throw;
             }
         }
+
+		/// <summary>
+		/// Метод для регистрации участника в приложении
+		/// </summary>
+		/// <param name="part"></param>
+		/// <returns></returns>
+		public async Task Register(Participant part)
+		{
+			var user = new IdentityUser<int> { UserName = part.Login };
+			var result = await _userManager.CreateAsync(user, part.Password);
+
+			if (result.Succeeded)
+			{
+				await _signInManager.SignInAsync(user, isPersistent: false);
+
+				List<Claim> claims = new List<Claim>();
+
+				claims.Add(new Claim("UserID", user.Id.ToString()));
+				claims.Add(new Claim("ParticipantFIO", part.ParticipantFIO));
+				claims.Add(new Claim("ScientificInterests", part.ParticipantFIO));
+				claims.Add(new Claim("ParticipantTasks", part.ParticipantTasks));
+				claims.Add(new Claim("ParticipantRating", part.ParticipantRating.ToString()));
+				claims.Add(new Claim("ParticipantPublications", part.ParticipantPublications));
+				claims.Add(new Claim("ParticipantPatents", part.ParticipantPatents));
+
+				claims.Add(new Claim("IdentityId", part.IdentityId.ToString()));
+				claims.Add(new Claim("Login", part.Login));
+				claims.Add(new Claim("Password", part.Password));
+
+				await _userManager.AddClaimsAsync(user, claims);
+
+				var new_user = await _userManager.FindByNameAsync(part.Login);
+				if (new_user != null)
+				{
+					part.IdentityId = new_user.Id;
+					await CreateTestParticipant(part);
+				}
+			}
+			else
+			{
+				throw new Exception("Ошибка регистрации участника");
+			}
+		}
 
 		/// <summary>
 		/// Метод для создания тестового участника

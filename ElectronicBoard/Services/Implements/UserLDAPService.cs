@@ -57,6 +57,16 @@ namespace ElectronicBoard.Services.Implements
 		}
 
 		/// <summary>
+		/// Проверка правильности пароля
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		public bool CheckPassword(UserLDAP model) 
+		{
+			return con.CanAuthorize(model.UserLogin, model.UserPassword);
+		}
+
+		/// <summary>
 		/// Метод для очистки таблицы с пользователями
 		/// </summary>
 		public void RemoveTable()
