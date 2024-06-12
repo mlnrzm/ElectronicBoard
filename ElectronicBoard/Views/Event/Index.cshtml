@@ -19,8 +19,8 @@
 				</header>
 
 				<p>Место проведения: @Model.EventPlace</p>
-				<p>Даты проведения: @Model.EventDateStart - @Model.EventDateFinish</p>
-				<p>Дата окончания приёма статей: @Model.EventDateFinishArticle</p>
+				<p>Даты проведения: @Model.EventDateStart.ToShortDateString() - @Model.EventDateFinish.ToShortDateString()</p>
+				<p>Дата окончания приёма статей: @Model.EventDateFinishArticle.ToShortDateString()</p>
 
 				<p>@Model.EventText</p>
 				<ul class="actions">

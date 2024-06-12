@@ -188,9 +188,6 @@ namespace ElectronicBoard.Controllers
 
 						Response.Redirect($"/project/index?" +
 							$"Id={new_project.Id}" +
-							$"&ProjectName={idn.GetAscii(new_project.ProjectName)}" +
-							$"&ProjectText={idn.GetAscii(new_project.ProjectText)}" +
-							$"&ProjectDescription={idn.GetAscii(new_project.ProjectDescription)}" +
 							$"&BlockId={new_project.BlockId}");
 					}
 					catch (Exception ex)

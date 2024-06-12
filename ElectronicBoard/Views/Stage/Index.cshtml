@@ -1,6 +1,8 @@
 ﻿@model Stage
 @{
 	ViewData["Title"] = "Stage Page";
+	DateTime DS = (DateTime)Model.DateStart;
+	DateTime DF = (DateTime)Model.DateFinish;
 }
 
 <!-- Main -->
@@ -20,7 +22,10 @@
 				</header>
 
 				<p>Описание: @Model.StageDescription</p>
-				<p>Даты: @Model.DateStart - @Model.DateFinish</p>
+				@if (Model.DateStart != null && Model.DateFinish != null)
+				{
+					<p>Даты: @DS.ToShortDateString() - @DF.ToShortDateString()</p>
+				}
 				<p>Статус: @Model.Status</p>
 
 				<p>@Model.StageText</p>

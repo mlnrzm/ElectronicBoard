@@ -108,10 +108,16 @@ namespace ElectronicBoard.Services.Implements
 				component = await context.Participants
 					.FirstOrDefaultAsync(rec => rec.Id == model.Id);
 			}
-			else 
+			else if (model.IdentityId > 0) 
+			{
+				List<Participant> parts = await GetFullList();
+				component = await context.Participants
+					.FirstOrDefaultAsync(rec => rec.IdentityId == model.IdentityId);
+			}
+			else
 			{
 				component = await context.Participants
-					.FirstOrDefaultAsync(rec => rec.IdentityId == model.IdentityId || rec.ParticipantFIO.Contains(model.ParticipantFIO));
+					.FirstOrDefaultAsync(rec => rec.ParticipantFIO.Contains(model.ParticipantFIO));
 			}
             return component != null ? CreateModel(component) : null;
         }
@@ -127,18 +133,23 @@ namespace ElectronicBoard.Services.Implements
             await context.Participants.AddAsync(CreateModel(model, new Participant()));
             await context.SaveChangesAsync();
 
-            var main_board = await boardService.GetElement(new Board
+			var new_part = await GetElement(new Participant { ParticipantFIO = model.ParticipantFIO });
+
+			// Поиск общей доски
+            var main_board = await boardService.GetElement(new Board { BoardName = "Общая доска" });
+
+			// Если общая доска создана, но ссылка не указана - указать на неё ссылку в Program
+			if (main_board != null) 
 			{
-				BoardName = "Общая доска"
-			});
+				if (Program.MainBoard == null) Program.MainBoard = main_board;
 
-            // Добавление участника к общей доске
-            if (Program.MainBoard == null && main_board != null)
-                Program.MainBoard = main_board;
+				// Блок участников общей доски, добавление в него нового участника
+				Block? main_block = await blockService.GetElement(new Block { BlockName = "Участники", BoardId = Program.MainBoard.Id });
+				if (main_block != null) await blockService.AddOrRemoveElement(new_part, main_block.Id);
+			}
 
-            Block? main_block = await blockService.GetElement(new Block { BoardId = Program.MainBoard.Id });
-
-			if (main_block != null) await blockService.AddOrRemoveElement(await GetElement(model), main_block.Id);
+			// Если общая доска ещё не создана - создание общей доски и добавление в неё первого участника
+			else await boardService.CreateMainBoard(new_part);
         }
 
 		/// <summary>
@@ -261,7 +272,8 @@ namespace ElectronicBoard.Services.Implements
 				if (new_user != null)
 				{
 					part.IdentityId = new_user.Id;
-					await CreateTestParticipant(part);
+					await Insert(part);
+					//await CreateTestParticipant(part);
 				}
 			}
 			else

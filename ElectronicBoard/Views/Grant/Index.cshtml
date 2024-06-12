@@ -21,10 +21,10 @@
 
 				<p>Описание: @Model.GrantDescription</p>
 				<p>Источник: @Model.GrantSource</p>
-				<p>Срок подачи заявки: @Model.GrantDeadline</p>
+				<p>Срок подачи заявки: @Model.GrantDeadline.ToShortDateString()</p>
 
-				<p>Срок начала выполнения: @Model.GrantDeadlineStart</p>
-				<p>Срок завершения выполнения: @Model.GrantDeadlineFinish</p>
+				<p>Срок начала выполнения: @Model.GrantDeadlineStart.ToShortDateString()</p>
+				<p>Срок завершения выполнения: @Model.GrantDeadlineFinish.ToShortDateString()</p>
 				<ul class="actions">
 					<li><a href="/grant/updgrant?Id=@Model.Id&BlockId=@Model.BlockId" class="button">Редактировать</a></li>
 				</ul>

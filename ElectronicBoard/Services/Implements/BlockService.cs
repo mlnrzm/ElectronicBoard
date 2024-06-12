@@ -68,7 +68,7 @@ namespace ElectronicBoard.Services.Implements
 
             using var context = new ElectronicBoardDatabase();
             var component = await context.Blocks
-					.FirstOrDefaultAsync(rec => rec.BlockName.Contains(model.BlockName) || rec.Id == model.Id);
+					.FirstOrDefaultAsync(rec => rec.Id == model.Id);
 
 			if (!string.IsNullOrEmpty(model.BlockName) && model.BoardId != 0)
             {

@@ -256,7 +256,10 @@ namespace ElectronicBoard.Controllers
 					try
 					{
 						await blockService.Delete(new Block { Id = block.Id });
-						Response.Redirect($"/board/index?Id=" + idn.GetAscii(board.Id.ToString()));
+						Response.Redirect($"/board/index?" +
+							$"Id={idn.GetAscii(board.Id.ToString())}" +
+							$"&BoardName={idn.GetAscii(board.BoardName)}" +
+							$"&BoardThematics={idn.GetAscii(board.BoardThematics)}");
 					}
 					catch (Exception ex) 
 					{

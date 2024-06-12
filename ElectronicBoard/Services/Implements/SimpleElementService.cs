@@ -63,8 +63,17 @@ namespace ElectronicBoard.Services.Implements
                 return null;
             }
             using var context = new ElectronicBoardDatabase();
-            var component = await context.SimpleElements
-            .FirstOrDefaultAsync(rec => rec.SimpleElementName.Contains(model.SimpleElementName) || rec.Id == model.Id);
+            SimpleElement? component = null;
+            if (model.Id > 0)
+            {
+                component = await context.SimpleElements
+                    .FirstOrDefaultAsync(rec => rec.Id == model.Id);
+            }
+            else
+            {
+                component = await context.SimpleElements
+                .FirstOrDefaultAsync(rec => rec.SimpleElementName.Contains(model.SimpleElementName));
+            }
             return component != null ? CreateModel(component) : null;
         }
 

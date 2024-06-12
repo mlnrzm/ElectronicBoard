@@ -115,6 +115,8 @@ namespace ElectronicBoard
 				Secure = CookieSecurePolicy.Always
 			});
 
+			AppContext.SetSwitch("System.Net.Http.UseSocketsHttpHandler", false);
+
 			app.Use(async (context, next) =>
 			{
 				var token = context.Request.Cookies[".AspNetCore.Application.Id"];

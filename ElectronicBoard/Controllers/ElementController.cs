@@ -187,9 +187,7 @@ namespace ElectronicBoard.Controllers
 
 						Response.Redirect($"/element/index?" +
 							$"Id={idn.GetAscii(new_element.Id.ToString())}" +
-							$"&SimpleElementName={idn.GetAscii(new_element.SimpleElementName)}" +
-							$"&SimpleElementText={idn.GetAscii(new_element.SimpleElementText)}" +
-							$"&BlockId={idn.GetAscii(new_element.BlockId.ToString())}");
+							$"&SimpleElementName={idn.GetAscii(new_element.SimpleElementName)}");
 					}
 					else
 					{

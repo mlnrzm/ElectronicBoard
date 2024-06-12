@@ -21,7 +21,8 @@ namespace ElectronicBoard.Services.Implements
 		/// <returns></returns>
 		public async Task<UserLDAP?> GetElement(UserLDAP model)
 		{
-			await UpdateAccounts();
+			// раскомментировать для обновления таблицы учетных записей
+			//await UpdateAccounts();
 			if (model == null)
 			{
 				return null;

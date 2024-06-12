@@ -72,8 +72,11 @@ namespace ElectronicBoard.Controllers
 				if (find_author != null && find_article != null && find_block != null)
 				{
 					if (find_author.ParticipantId != null)
-						ViewBag.Participant = participantService.GetElement(
+					{
+						Participant p = await participantService.GetElement(
 						new Participant { Id = (int)find_author.ParticipantId });
+						ViewBag.Participant = p;
+					}
 
 					// Статьи автора
 					List<Article> articles = await articleService.GetArticlesAuthor(find_author.Id);

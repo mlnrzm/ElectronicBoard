@@ -1,5 +1,6 @@
 ﻿using AspNetCoreHero.ToastNotification.Abstractions;
 using ElectronicBoard.Models;
+using ElectronicBoard.Services.Implements;
 using ElectronicBoard.Services.ServiceContracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -115,7 +116,7 @@ namespace ElectronicBoard.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Enter()
 		{
-			createTest().Wait();
+			//createTest().Wait();
 			return View();
 		}
 		[HttpPost]
@@ -123,46 +124,99 @@ namespace ElectronicBoard.Controllers
 		{
 			if (!string.IsNullOrEmpty(login) && !string.IsNullOrEmpty(password))
 			{
-				// 1. Если учётка есть и пароль введён верно => 
-				// обращение к пользователям приложения
+				// 1. Если учётка есть в таблице пользователей
 				var userLDAP = await userLDAPService.GetElement(new UserLDAP { UserLogin = login });
-				bool checkPass = userLDAPService.CheckPassword(new UserLDAP { UserLogin = login, UserPassword = password });
-				if (userLDAP != null && checkPass)
+				if (userLDAP != null)
 				{
-					var user_app = await _userManager.FindByNameAsync(login);
-					// 1.1. Если пользователь по логину найден
-					if (user_app != null)
+					// Отправка запроса для проверки пароля
+					// раскомментировать для проверки пароля Ldap
+					// bool checkPass = userLDAPService.CheckPassword(new UserLDAP { UserLogin = login, UserPassword = password });
+					bool checkPass = true;
+					if (checkPass)
 					{
-						var result_app = await _signInManager.PasswordSignInAsync(user_app, userLDAP.UserPassword, false, false);
-
-						// если пароль записан верно => вход
-						if (result_app.Succeeded)
+						// 1.1. Если участник по логину найден
+						var user_app = await _userManager.FindByNameAsync(login);
+						if (user_app != null)
 						{
-							IEnumerable<Claim> claims = await _userManager.GetClaimsAsync(user_app);
-							var token = GetToken(user_app, claims);
-
-							HttpContext.Response.Cookies.Append(".AspNetCore.Application.Id", token,
-							new CookieOptions
-							{
-								MaxAge = TimeSpan.FromMinutes(60)
-							});
-
-							Response.Redirect($"/board/index?" +
-								$"BoardName={idn.GetAscii("Общая доска")}");
-						}
-						else
-						{
-							// если пароль записан пользователю неверно => изменение пароля и вход
-
-							Participant? login_participant = await participantService.GetElement(new Participant { IdentityId = user_app.Id });
-							await participantService.Update(new Participant { Id = login_participant.Id, Password = userLDAP.UserPassword });
-
-							var result_app2 = await _signInManager.PasswordSignInAsync(user_app, userLDAP.UserPassword, false, false);
-
-							if (result_app2.Succeeded)
+							// если пароль записан участнику верно => вход
+							var result_app = await _signInManager.PasswordSignInAsync(user_app, userLDAP.UserPassword, false, false);
+							if (result_app.Succeeded)
 							{
 								IEnumerable<Claim> claims = await _userManager.GetClaimsAsync(user_app);
 								var token = GetToken(user_app, claims);
+
+								HttpContext.Response.Cookies.Append(".AspNetCore.Application.Id", token,
+								new CookieOptions
+								{
+									MaxAge = TimeSpan.FromMinutes(60)
+								});
+
+								Response.Redirect($"/board/index?" +
+									$"BoardName={idn.GetAscii("Общая доска")}");
+							}
+							// если пароль записан участнику неверно => изменение пароля и вход
+							else
+							{
+								Participant? login_participant = await participantService.GetElement(new Participant { IdentityId = user_app.Id });
+								await participantService.Update(new Participant { 
+									Id = login_participant.Id, 
+									ParticipantFIO = login_participant.ParticipantFIO,
+									IdentityId = login_participant.IdentityId,
+									ParticipantPatents = login_participant.ParticipantPatents,
+									ParticipantPublications = login_participant.ParticipantPublications,
+									ParticipantRating = login_participant.ParticipantRating,
+									ParticipantTasks = login_participant.ParticipantTasks,
+									ScientificInterests = login_participant.ScientificInterests,
+									Picture = login_participant.Picture,
+									Login = login_participant.Login,
+									Password = userLDAP.UserPassword });
+
+								var result_app2 = await _signInManager.PasswordSignInAsync(user_app, userLDAP.UserPassword, false, false);
+
+								if (result_app2.Succeeded)
+								{
+									IEnumerable<Claim> claims = await _userManager.GetClaimsAsync(user_app);
+									var token = GetToken(user_app, claims);
+
+									HttpContext.Response.Cookies.Append(".AspNetCore.Application.Id", token,
+									new CookieOptions
+									{
+										MaxAge = TimeSpan.FromMinutes(60)
+									});
+
+									Response.Redirect($"/board/index?" +
+										$"BoardName={idn.GetAscii("Общая доска")}");
+								}
+								else
+								{
+									_notyf.Error("Введите логин и пароль");
+									Response.Redirect($"/participant/enter");
+								}
+							}
+						}
+						// 1.2. Если пользователь по логину не найден регистрация участника в приложении и вход
+						else
+						{
+							await participantService.Register(new Participant
+							{
+								ParticipantFIO = userLDAP.UserFIO,
+								ParticipantPatents = "нет",
+								ParticipantPublications = "нет",
+								ParticipantRating = 0,
+								ParticipantTasks = "нет",
+								ScientificInterests = "нет",
+								Picture = new byte[] { },
+								Login = userLDAP.UserLogin,
+								Password = userLDAP.UserPassword
+							});
+
+							var user_reg = await _userManager.FindByNameAsync(login);
+							var result_reg = await _signInManager.PasswordSignInAsync(user_reg, userLDAP.UserPassword, false, false);
+
+							if (result_reg.Succeeded)
+							{
+								IEnumerable<Claim> claims = await _userManager.GetClaimsAsync(user_reg);
+								var token = GetToken(user_reg, claims);
 
 								HttpContext.Response.Cookies.Append(".AspNetCore.Application.Id", token,
 								new CookieOptions
@@ -182,73 +236,23 @@ namespace ElectronicBoard.Controllers
 					}
 					else
 					{
-						// 1.2. Если пользователь по логину не найден
-						// регистрация пользователя в приложении и вход
-						await participantService.Register(new Participant
-						{
-							ParticipantFIO = userLDAP.UserFIO,
-							ParticipantPatents = "нет",
-							ParticipantPublications = "нет",
-							ParticipantRating = 0,
-							ParticipantTasks = "нет",
-							ScientificInterests = "нет",
-							Picture = new byte[] { },
-							Login = userLDAP.UserLogin,
-							Password = userLDAP.UserPassword
-						});
-
-						var user_reg = await _userManager.FindByNameAsync(login);
-						var result_reg = await _signInManager.PasswordSignInAsync(user_reg, userLDAP.UserPassword, false, false);
-
-						IEnumerable<Claim> claims = await _userManager.GetClaimsAsync(user_reg);
-						var token = GetToken(user_reg, claims);
-
-						HttpContext.Response.Cookies.Append(".AspNetCore.Application.Id", token,
-						new CookieOptions
-						{
-							MaxAge = TimeSpan.FromMinutes(60)
-						});
-
-						Response.Redirect($"/board/index?" +
-							$"BoardName={idn.GetAscii("Общая доска")}");
+						_notyf.Error("Пароль введён неверно");
+						Response.Redirect($"/participant/enter");
 					}
 				}
 				else
 				{
 					// 2. Если такой учётки нет
-					_notyf.Error("Введите логин и пароль");
+					_notyf.Error("Пользователя с таким логином не существует");
 					Response.Redirect($"/participant/enter");
 				}
-
-				var user = await _userManager.FindByNameAsync(login);
-				var result = await _signInManager.PasswordSignInAsync(user, userLDAP.UserPassword, false, false);
-
-				if (result.Succeeded)
-				{
-					IEnumerable<Claim> claims = await _userManager.GetClaimsAsync(user);
-					var token = GetToken(user, claims);
-
-					HttpContext.Response.Cookies.Append(".AspNetCore.Application.Id", token,
-					new CookieOptions
-					{
-						MaxAge = TimeSpan.FromMinutes(60)
-					});
-
-					Response.Redirect($"/board/index?" +
-						$"BoardName={idn.GetAscii("Общая доска")}");
-				}
-				else
-				{
-					_notyf.Error("Введите логин и пароль");
-					Response.Redirect($"/participant/enter");
-				}
-
 			}
 			else
 			{
 				_notyf.Error("Введите логин и пароль");
 				Response.Redirect($"/participant/enter");
 			}
+			
 		}
 
 		/// <summary>
@@ -482,7 +486,8 @@ namespace ElectronicBoard.Controllers
 
 				// Статьи
 				Author? author = await authorService.GetElement(new Author { ParticipantId = find_part.Id });
-				List<Article> articles = await articleService.GetArticlesAuthor(author.Id);
+				List<Article> articles = new List<Article>();
+				if (author != null) articles = await articleService.GetArticlesAuthor(author.Id);
 				ViewBag.Articles = articles;
 
 				// Доска, на которой находится блок
